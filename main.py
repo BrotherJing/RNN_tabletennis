@@ -40,21 +40,22 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	return costs
 
 directory = 'data/'
-filename = 'all_data.csv'
+filename = 'seq_all.csv'#'all_data.csv'
 
 config = {}
 config['num_layers'] = 2
-config['hidden_size'] = 40
-config['batch_size'] = 20
-config['seq_len'] = 40
-config['overlap_rate'] = 0.8
-config['learning_rate'] = 0.08
-config['lr_decay'] = 0.95
+config['hidden_size'] = 64
+config['batch_size'] = 64
+config['seq_len'] = 20
+config['overlap_rate'] = 0.0
+config['mixtures'] = 3
+config['learning_rate'] = 0.005
+config['lr_decay'] = 0.9
 config['keep_prob'] = 1
-config['max_grad_norm'] = 1
-config['init_scale'] = 0.04
-config['max_epoch'] = 60
-config['max_max_epoch'] = 100
+config['max_grad_norm'] = 0.5
+config['init_scale'] = 0.01
+config['max_epoch'] = 5
+config['max_max_epoch'] = 10
 
 train_ratio = 0.8
 plot_every = 100
@@ -91,6 +92,8 @@ def main(_):
 			with tf.variable_scope("Model", reuse=None, initializer=initializer):
 				model = Model(True, config)
 			tf.summary.scalar("square error loss", model.cost)
+			tf.summary.histogram("prob", model.p_sum)
+			tf.summary.histogram("logits", model.logits)
 
 		with tf.name_scope("Test"):
 			with tf.variable_scope("Model", reuse=True, initializer=initializer):
@@ -112,7 +115,7 @@ def main(_):
 				test_perplexity = run_epoch(session, mtest, X_test, y_test)
 				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
-			model.sample(session, X_train[10], sl_pre=38);
+			model.sample(session, X_train[10], sl_pre=config['seq_len']/2);
 			#print "saving model to %s"%(directory)
 			#sv.saver.save(session, directory, global_step=sv.global_step)
 if __name__ == '__main__':
