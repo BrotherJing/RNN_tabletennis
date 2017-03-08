@@ -26,7 +26,7 @@ class DataLoad():
 			#test = df[df['id']=='10']
 			#test.head(10)
 
-		df_arr = df.as_matrix(['x','y','z','rankc'])#'t'
+		df_arr = df.as_matrix(['x','y','z','t'])#'rankc'
 		df = None
 		start_idx = 0
 		N,D = df_arr.shape#N*4
