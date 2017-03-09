@@ -9,7 +9,6 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	costs = 0.0
 	batch_size = config['batch_size']
 	N, coords, _ = X.shape
-	state = session.run(model.initial_state)
 	fetches = {
 		"cost": model.cost,
 	}
@@ -19,14 +18,10 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	for step in range(N/batch_size+1):
 		batch_idx = np.random.choice(N, batch_size, replace=False)
 		feed_dict = {}
-		for i, (c, h) in enumerate(model.initial_state):
-			feed_dict[c] = state[i].c
-			feed_dict[h] = state[i].h
 		feed_dict[model.x] = X[batch_idx]
 		feed_dict[model.y_] = y_[batch_idx]
 		vals = session.run(fetches, feed_dict)
 		cost = vals['cost']
-		#state = vals['final_state']
 		costs += cost
 		if is_training:
 			summary_str = session.run(summary, feed_dict=feed_dict)
