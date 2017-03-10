@@ -31,14 +31,15 @@ class DataLoad():
 		df = None
 		start_idx = 0
 		N,D = df_arr.shape#N*4
+
+		df_arr = self.preprocess(df_arr)
+
 		for i in range(1,N,1):
 			if verbose and i%1000==0:
 				print "load %5d of %5d"%(i,N)
 			if int(df_arr[i,3])==1:#encounter a new sequence
 				end_idx = i
 				seq = df_arr[start_idx:end_idx,:]
-				seq[:,2] = seq[:,2] - np.min(seq[:,2])#the default height
-				seq = seq/1000
 				while seq.shape[0]>=seq_len+1:
 					self.X.append(seq[:seq_len,:3])
 					self.labels.append(seq[1:seq_len+1,:3])
@@ -60,3 +61,10 @@ class DataLoad():
 		self.data['X_test'] = self.X[idx_cut:]
 		self.data['y_test'] = self.labels[idx_cut:]
 		print "%d train samples and %d test samples"%(idx_cut, N - idx_cut)
+
+	def preprocess(self, data):
+		maxZ = np.max(data[:,2])
+		data[:,2] = data[:,2]/maxZ
+		data[:,0] = data[:,0]/1525
+		data[:,1] = data[:,1]/2740
+		return data
