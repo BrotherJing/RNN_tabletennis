@@ -9,6 +9,7 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	costs = 0.0
 	batch_size = config['batch_size']
 	N, coords, _ = X.shape
+	state = session.run(model.initial_state)
 	fetches = {
 		"cost": model.cost,
 	}
@@ -18,6 +19,9 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	for step in range(N/batch_size+1):
 		batch_idx = np.random.choice(N, batch_size, replace=False)
 		feed_dict = {}
+		for i, (c, h) in enumerate(model.initial_state):
+			feed_dict[c] = state[i].c
+			feed_dict[h] = state[i].h
 		feed_dict[model.x] = X[batch_idx]
 		feed_dict[model.y_] = y_[batch_idx]
 		vals = session.run(fetches, feed_dict)
@@ -72,7 +76,6 @@ def main(_):
 
 	config['coords'] = coords
 
-	#epochs = np.floor(config['batch_size']*max_iter/N)
 	print "Train with %d epochs, %d iterations"%(config['max_max_epoch'], N*config['max_max_epoch']/config['batch_size'])
 
 	with tf.Graph().as_default():
@@ -91,7 +94,9 @@ def main(_):
 				mtest = Model(False, config)
 		summary = tf.summary.merge_all()
 		init = tf.global_variables_initializer()
-		#sv = tf.train.Supervisor(logdir=directory) tf.global_variables_initializer()
+
+		saver = tf.train.Saver()
+
 		with tf.Session() as session:
 			summary_writer = tf.summary.FileWriter(directory, session.graph)
 			session.run(init)
@@ -107,7 +112,18 @@ def main(_):
 				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
 			model.sample(session, X_train[5], sl_pre=config['seq_len']/2);
-			#print "saving model to %s"%(directory)
-			#sv.saver.save(session, directory, global_step=sv.global_step)
+
+			saver.save(session, directory+'my-model')
+		#meta_graph_def = tf.train.export_meta_graph(filename=directory+"/my-model.meta")
+
+		with tf.Session() as sess:
+			sess.run(init)
+			saver.restore(sess, directory+'my-model')
+
+			for i in range(10):
+				test_perplexity = run_epoch(sess, mtest, X_test, y_test)
+				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
+
+
 if __name__ == '__main__':
 	tf.app.run(main=main)
