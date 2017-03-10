@@ -26,7 +26,8 @@ class DataLoad():
 			#test = df[df['id']=='10']
 			#test.head(10)
 
-		df_arr = df.as_matrix(['x','y','z','t'])#'rankc'
+		#df_arr = df.as_matrix(['x','y','z','t'])
+		df_arr = df.as_matrix(['x','y','z','rankc'])
 		df = None
 		start_idx = 0
 		N,D = df_arr.shape#N*4
@@ -37,7 +38,7 @@ class DataLoad():
 				end_idx = i
 				seq = df_arr[start_idx:end_idx,:]
 				seq[:,2] = seq[:,2] - np.min(seq[:,2])#the default height
-				seq = seq/1000
+				#seq = seq/1000
 				while seq.shape[0]>=seq_len+1:
 					self.X.append(seq[:seq_len,:3])
 					self.labels.append(seq[1:seq_len+1,:3])

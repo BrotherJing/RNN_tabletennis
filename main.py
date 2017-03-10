@@ -35,22 +35,29 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	return costs
 
 directory = 'data/'
-filename = 'all_data.csv'#'seq_all.csv'
+#filename = 'all_data.csv'
+filename = 'seq_all.csv'
 
 config = {}
 config['num_layers'] = 2
 config['hidden_size'] = 64
-config['batch_size'] = 20#64
-config['seq_len'] = 40#20
-config['overlap_rate'] = 0.8#0.0
+#config['batch_size'] = 20
+config['batch_size'] = 64
+#config['seq_len'] = 40
+config['seq_len'] = 20
+#config['overlap_rate'] = 0.8
+config['overlap_rate'] = 0.0
 config['mixtures'] = 3
 config['learning_rate'] = 0.005
-config['lr_decay'] = 0.95
+#config['lr_decay'] = 0.95
+config['lr_decay'] = 0.9
 config['keep_prob'] = 1
 config['max_grad_norm'] = 0.5
 config['init_scale'] = 0.01
-config['max_epoch'] = 60
-config['max_max_epoch'] = 100
+#config['max_epoch'] = 60
+#config['max_max_epoch'] = 100
+config['max_epoch'] = 10
+config['max_max_epoch'] = 20
 
 train_ratio = 0.8
 plot_every = 100
