@@ -7,13 +7,10 @@ from model import *
 def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summary_writer=None, verbose=False):
 	is_training = False
 	costs = 0.0
-	iters = 0
 	batch_size = config['batch_size']
 	N, coords, _ = X.shape
-	state = session.run(model.initial_state)
 	fetches = {
 		"cost": model.cost,
-		"final_state": model.final_state,
 	}
 	if eval_op is not None:
 		fetches["eval_op"] = eval_op
@@ -21,17 +18,11 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	for step in range(N/batch_size+1):
 		batch_idx = np.random.choice(N, batch_size, replace=False)
 		feed_dict = {}
-		for i, (c, h) in enumerate(model.initial_state):
-			feed_dict[c] = state[i].c
-			feed_dict[h] = state[i].h
-		#print X[batch_idx].shape
 		feed_dict[model.x] = X[batch_idx]
 		feed_dict[model.y_] = y_[batch_idx]
 		vals = session.run(fetches, feed_dict)
 		cost = vals['cost']
-		state = vals['final_state']
 		costs += cost
-		iters += batch_size
 		if is_training:
 			summary_str = session.run(summary, feed_dict=feed_dict)
 			summary_writer.add_summary(summary_str, n_epoch*(N/batch_size+1)+step)
@@ -89,7 +80,7 @@ def main(_):
 	config['coords'] = coords
 
 	#epochs = np.floor(config['batch_size']*max_iter/N)
-	print "Train with %d epochs"%(config['max_epoch'])
+	print "Train with %d epochs, %d iterations"%(config['max_max_epoch'], N*config['max_max_epoch']/config['batch_size'])
 
 	with tf.Graph().as_default():
 		initializer = tf.random_uniform_initializer(-config['init_scale'],
@@ -100,7 +91,7 @@ def main(_):
 				model = Model(True, config)
 			tf.summary.scalar("square error loss", model.cost)
 			tf.summary.histogram("prob", model.p_sum)
-			tf.summary.histogram("logits", model.logits)
+			tf.summary.histogram("w", model.softmax_w)
 
 		with tf.name_scope("Test"):
 			with tf.variable_scope("Model", reuse=True, initializer=initializer):

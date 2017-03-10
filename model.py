@@ -33,7 +33,6 @@ class Model():
 
 		self.x = tf.placeholder(tf.float32, shape=[self.batch_size, self.coords, self.seq_len], name='Input_data')
 		self.y_ = tf.placeholder(tf.float32, shape=[self.batch_size, self.coords, self.seq_len], name='Ground_truth')
-		#self.keep_prob = tf.placeholder(tf.float32)
 		
 		def lstm_cell():
 			return tf.contrib.rnn.LSTMCell(hidden_size, forget_bias=0.0, state_is_tuple=True, use_peepholes=True)
@@ -59,15 +58,15 @@ class Model():
 			output = tf.reshape(tf.concat(outputs[:-1], 0), [-1, hidden_size])#[seqlen-1*batch_size, hidden_size]
 			softmax_w = tf.get_variable("softmax_w", [hidden_size, self.output_units], dtype=tf.float32)
 			softmax_b = tf.get_variable("softmax_b", [self.output_units], dtype=tf.float32, initializer=tf.constant_initializer(0.5))
-			logits = tf.matmul(output, softmax_w) + softmax_b
+			logits = tf.matmul(output, softmax_w) + softmax_b#[seqlen-1*batch_size, output_units]
 
-			self._logits = softmax_w
+			self._softmax_w = softmax_w
 
 			h_xyz = tf.reshape(logits, (self.seq_len-1, self.batch_size, self.output_units))
 			h_xyz = tf.transpose(h_xyz, [1,2,0])#[batch_size, output_units, seqlen-1]
 
-			seq_delta = self.x[:,:3,1:] - self.x[:,:3,:-1]#ground truth
-			delta1, delta2, delta3 = tf.split(seq_delta, 3, 1)#delta for x y z
+			seq_delta = self.x[:,:3,1:] - self.x[:,:3,:-1]#ground truth [batch_size, 3, seqlen-1]
+			delta1, delta2, delta3 = tf.split(seq_delta, 3, 1)#delta for x y z, each [batch_size, 1, seqlen-1]
 
 			mu1, mu2, mu3, s1, s2, s3, rho, theta = tf.split(h_xyz, self.mixture_params, 1)#each is [batch_size, mixtures, seqlen-1]
 
@@ -79,12 +78,12 @@ class Model():
 
 			s1 = tf.exp(s1)
 			s2 = tf.exp(s2)
-			s3 = tf.exp(s3)
+			s3 = tf.exp(s3)#explode?
 			rho = tf.tanh(rho)
 
 			p_xy = tf_2d_normal(delta1, delta2, mu1, mu2, s1, s2, rho)
 			p_z = tf_1d_normal(delta3, mu3, s3)
-			p = tf.multiply(p_xy, p_z)
+			p = tf.multiply(p_xy, p_z)#[batch_size, mixtures, seqlen-1] should be all [0,1]
 
 			self._p_sum = p_sum = tf.reduce_sum(tf.multiply(p, theta), 1)#sum along the mixture dimension
 			loss = -tf.log(tf.maximum(p_sum, 1e-20))
@@ -104,7 +103,7 @@ class Model():
 		gradients = zip(grads, tvars)
 		self._train_op = optimizer.apply_gradients(gradients, global_step=tf.contrib.framework.get_or_create_global_step())
 		self._new_lr = tf.placeholder(tf.float32, shape=[], name="new_learning_rate")
-		self._lr_update = tf.assign(self._lr, self._new_lr)
+		self._lr_update = tf.assign(self._lr, self._new_lr)#this is an op
 
 	def assign_lr(self, session, lr_value):
 		session.run(self._lr_update, feed_dict={self._new_lr:lr_value})
@@ -167,8 +166,8 @@ class Model():
 		return self._p_sum
 
 	@property
-	def logits(self):
-		return self._logits
+	def softmax_w(self):
+		return self._softmax_w
 
 	@property
 	def lr(self):
