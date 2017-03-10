@@ -35,29 +35,32 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	return costs
 
 directory = 'data/'
-#filename = 'all_data.csv'
-filename = 'seq_all.csv'
+filename = 'all_data.csv'
+#filename = 'seq_all.csv'
 
 config = {}
+if filename=='seq_all.csv':
+	config['seq_len'] = 20
+	config['batch_size'] = 64
+	config['overlap_rate'] = 0.0
+	config['lr_decay'] = 0.95
+	config['max_epoch'] = 10
+	config['max_max_epoch'] = 20
+else:
+	config['seq_len'] = 40
+	config['batch_size'] = 20
+	config['overlap_rate'] = 0.8
+	config['lr_decay'] = 0.98
+	config['max_epoch'] = 60
+	config['max_max_epoch'] = 100
+config['learning_rate'] = 0.005
 config['num_layers'] = 2
 config['hidden_size'] = 64
-#config['batch_size'] = 20
-config['batch_size'] = 64
-#config['seq_len'] = 40
-config['seq_len'] = 20
-#config['overlap_rate'] = 0.8
-config['overlap_rate'] = 0.0
 config['mixtures'] = 3
-config['learning_rate'] = 0.005
-#config['lr_decay'] = 0.95
 config['lr_decay'] = 0.9
 config['keep_prob'] = 1
 config['max_grad_norm'] = 0.5
 config['init_scale'] = 0.01
-#config['max_epoch'] = 60
-#config['max_max_epoch'] = 100
-config['max_epoch'] = 10
-config['max_max_epoch'] = 20
 
 train_ratio = 0.8
 plot_every = 100
@@ -101,6 +104,16 @@ def main(_):
 				mtest = Model(False, config)
 		summary = tf.summary.merge_all()
 		init = tf.global_variables_initializer()
+
+		tf.add_to_collection("train_op", model.train_op)
+		tf.add_to_collection("test_cost", mtest.cost)
+		tf.add_to_collection("x", mtest.x)
+		tf.add_to_collection("y_", mtest.y_)
+		for (c, h) in mtest.initial_state:
+			tf.add_to_collection("initial_state_c", c)
+			tf.add_to_collection("initial_state_h", h)
+		for output in mtest.outputs:
+			tf.add_to_collection("test_outputs", output)
 
 		saver = tf.train.Saver()
 

@@ -162,6 +162,10 @@ class Model():
 		return self._cost
 
 	@property
+	def outputs(self):
+		return self._outputs
+
+	@property
 	def p_sum(self):
 		return self._p_sum
 
