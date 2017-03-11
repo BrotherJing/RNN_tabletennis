@@ -35,29 +35,36 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 	return costs
 
 directory = 'data/'
-filename = 'all_data.csv'
+#filename = 'all_data.csv'
 #filename = 'seq_all.csv'
+filename = 'coords.csv'
 
 config = {}
 if filename=='seq_all.csv':
 	config['seq_len'] = 20
 	config['batch_size'] = 64
 	config['overlap_rate'] = 0.0
-	config['lr_decay'] = 0.95
+	config['lr_decay'] = 0.9
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 20
-else:
+elif filename =='all_data.csv':
 	config['seq_len'] = 40
 	config['batch_size'] = 20
 	config['overlap_rate'] = 0.8
 	config['lr_decay'] = 0.98
 	config['max_epoch'] = 60
 	config['max_max_epoch'] = 100
+else:
+	config['seq_len'] = 60
+	config['batch_size'] = 64
+	config['overlap_rate'] = 0.5
+	config['lr_decay'] = 0.9
+	config['max_epoch'] = 10
+	config['max_max_epoch'] = 20
 config['learning_rate'] = 0.005
 config['num_layers'] = 2
 config['hidden_size'] = 64
 config['mixtures'] = 3
-config['lr_decay'] = 0.9
 config['keep_prob'] = 1
 config['max_grad_norm'] = 0.5
 config['init_scale'] = 0.01
@@ -131,19 +138,9 @@ def main(_):
 				test_perplexity = run_epoch(session, mtest, X_test, y_test)
 				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
-			model.sample(session, X_train[5], sl_pre=config['seq_len']/2);
+			mtest.sample(session, X_train[5], sl_pre=config['seq_len']/2);
 
 			saver.save(session, directory+'my-model')
-		#meta_graph_def = tf.train.export_meta_graph(filename=directory+"/my-model.meta")
-
-		with tf.Session() as sess:
-			sess.run(init)
-			saver.restore(sess, directory+'my-model')
-
-			for i in range(10):
-				test_perplexity = run_epoch(sess, mtest, X_test, y_test)
-				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
-
 
 if __name__ == '__main__':
 	tf.app.run(main=main)

@@ -122,11 +122,16 @@ class Model():
 		assert seq.shape[1] == self.seq_len and seq.shape[0] == self.coords, 'Feed a sequence in [crd,sl]'
 		assert sl_pre > 1, 'Please provide two predefined coordinates' 
 
+		state = session.run(self._initial_state)
+
 		seq_feed = np.zeros((self.batch_size, self.coords, self.seq_len))
 		seq_feed[0,:,:] = seq[:,:]
 		offset_draw = np.zeros((3))
 		for sl_draw in range(sl_pre,self.seq_len-1):
 			feed_dict = {self.x:seq_feed}
+			for i, (c, h) in enumerate(self._initial_state):
+				feed_dict[c] = state[i].c
+				feed_dict[h] = state[i].h
 			result = session.run([self._outputs], feed_dict=feed_dict)[0]
 
 			idx_theta = self.sample_theta(result[7][0,:,sl_draw])
@@ -143,8 +148,12 @@ class Model():
 			cov[0,0] = np.square(s1)
 			cov[1,1] = np.square(s2)
 			cov[2,2] = np.square(s3)
-			cov[1,2] = s12
-			cov[2,1] = s12
+			cov[0,1] = s12
+			cov[1,0] = s12
+			#cov[1,2] = s12
+			#cov[2,1] = s12
+			#print cov
+			#cov += np.identity(3)*1e-6
 			rv = multivariate_normal(mean, cov)
 			draw = rv.rvs()
 			seq_feed[0,:,sl_draw+1] = seq_feed[0,:,sl_draw] + draw
