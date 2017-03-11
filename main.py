@@ -58,21 +58,18 @@ else:
 	config['seq_len'] = 60
 	config['batch_size'] = 64
 	config['overlap_rate'] = 0.5
-	config['lr_decay'] = 0.9
+	config['lr_decay'] = 0.95
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 20
 config['learning_rate'] = 0.005
 config['num_layers'] = 2
 config['hidden_size'] = 64
 config['mixtures'] = 3
-config['keep_prob'] = 1
+config['keep_prob'] = 0.9
 config['max_grad_norm'] = 0.5
 config['init_scale'] = 0.01
 
 train_ratio = 0.8
-plot_every = 100
-
-plot = True
 
 def main(_):
 
@@ -119,6 +116,9 @@ def main(_):
 		for (c, h) in mtest.initial_state:
 			tf.add_to_collection("initial_state_c", c)
 			tf.add_to_collection("initial_state_h", h)
+		for (c, h) in mtest.final_state:
+			tf.add_to_collection("final_state_c", c)
+			tf.add_to_collection("final_state_h", h)
 		for output in mtest.outputs:
 			tf.add_to_collection("test_outputs", output)
 
@@ -138,7 +138,7 @@ def main(_):
 				test_perplexity = run_epoch(session, mtest, X_test, y_test)
 				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
-			mtest.sample(session, X_train[5], sl_pre=config['seq_len']/2);
+			mtest.sample(session, X_test[5], sl_pre=config['seq_len']/2);
 
 			saver.save(session, directory+'my-model')
 

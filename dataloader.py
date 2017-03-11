@@ -23,11 +23,8 @@ class DataLoad():
 		df = pd.read_csv(self.data_path)
 		if verbose:
 			print "the shape of the data is ", df.shape
-			#test = df[df['id']=='10']
-			#test.head(10)
 
 		df_arr = df.as_matrix(['x','y','z','t'])
-		#df_arr = df.as_matrix(['x','y','z','rankc'])
 		df = None
 		start_idx = 0
 		N,D = df_arr.shape#N*4

@@ -15,15 +15,20 @@ def sample_theta(thetas):
 			return i
 	return 0
 
-def sample(session, placeholder_x, outputs, config, seq, sl_pre = 4, bias=1.0):
+def sample(session, placeholder_x, initial_state, outputs, config, seq, sl_pre = 4, bias=1.0):
 	assert seq.shape[1] == config['seq_len'] and seq.shape[0] == config['coords'], 'Feed a sequence in [crd,sl]'
 	assert sl_pre > 1, 'Please provide two predefined coordinates' 
+
+	state = session.run(initial_state)
 
 	seq_feed = np.zeros((config['batch_size'], config['coords'], config['seq_len']))
 	seq_feed[0,:,:] = seq[:,:]
 	offset_draw = np.zeros((3))
 	for sl_draw in range(sl_pre,config['seq_len']-1):
 		feed_dict = {placeholder_x:seq_feed}
+		for i, (c, h) in enumerate(initial_state):
+			feed_dict[c] = state[i][0]
+			feed_dict[h] = state[i][1]
 		result = session.run(outputs, feed_dict=feed_dict)
 
 		idx_theta = sample_theta(result[7][0,:,sl_draw])

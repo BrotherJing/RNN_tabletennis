@@ -28,30 +28,37 @@ def run_epoch(session, initial_state, cost, X, y_, placeholder_x, placeholder_y)
 	return costs
 
 directory = 'data/'
-filename = 'all_data.csv'
+#filename = 'all_data.csv'
 #filename = 'seq_all.csv'
+filename = 'coords.csv'
 
 config = {}
 if filename=='seq_all.csv':
 	config['seq_len'] = 20
 	config['batch_size'] = 64
 	config['overlap_rate'] = 0.0
-	config['lr_decay'] = 0.95
-	config['mixtures'] = 3
+	config['lr_decay'] = 0.9
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 20
-else:
+elif filename =='all_data.csv':
 	config['seq_len'] = 40
 	config['batch_size'] = 20
 	config['overlap_rate'] = 0.8
 	config['lr_decay'] = 0.98
 	config['max_epoch'] = 60
 	config['max_max_epoch'] = 100
+else:
+	config['seq_len'] = 60
+	config['batch_size'] = 64
+	config['overlap_rate'] = 0.5
+	config['lr_decay'] = 0.9
+	config['max_epoch'] = 10
+	config['max_max_epoch'] = 20
 config['learning_rate'] = 0.005
 config['num_layers'] = 2
 config['hidden_size'] = 64
-config['lr_decay'] = 0.9
-config['keep_prob'] = 1
+config['mixtures'] = 3
+config['keep_prob'] = 0.9
 config['max_grad_norm'] = 0.5
 config['init_scale'] = 0.01
 
@@ -75,7 +82,6 @@ def main(_):
 
 	config['coords'] = coords
 
-
 	with tf.Session() as session:
 
 		saver = tf.train.import_meta_graph(directory+'my-model.meta')
@@ -86,6 +92,11 @@ def main(_):
 		initial_state = []
 		for i in range(len(initial_state_c)):
 			initial_state.append((initial_state_c[i], initial_state_h[i]))
+		final_state_c = tf.get_collection("final_state_c")
+		final_state_h = tf.get_collection("final_state_h")
+		final_state = []
+		for i in range(len(final_state_c)):
+			final_state.append((final_state_c[i], final_state_h[i]))
 		test_cost = tf.get_collection("test_cost")[0]
 		placeholder_x = tf.get_collection("x")[0]
 		placeholder_y = tf.get_collection("y_")[0]
@@ -96,7 +107,7 @@ def main(_):
 			test_perplexity = run_epoch(session, initial_state, test_cost, X_test, y_test, placeholder_x, placeholder_y)
 			print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
-		sample(session, placeholder_x, test_outputs, config, X_train[5], sl_pre=config['seq_len']/2);
+			sample(session, placeholder_x, initial_state, test_outputs, config, X_test[i], sl_pre=config['seq_len']/2);
 
 if __name__ == '__main__':
 	tf.app.run(main=main)
