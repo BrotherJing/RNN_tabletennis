@@ -107,7 +107,8 @@ def main(_):
 			test_perplexity = run_epoch(session, initial_state, test_cost, X_test, y_test, placeholder_x, placeholder_y)
 			print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
-			sample(session, placeholder_x, initial_state, test_outputs, config, X_test[i], sl_pre=config['seq_len']/2);
+			#sample(session, placeholder_x, initial_state, test_outputs, config, X_test[i], sl_pre=config['seq_len']/4);
+			sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test[i], predict_len=120, sl_pre=config['seq_len']/2)
 
 if __name__ == '__main__':
 	tf.app.run(main=main)

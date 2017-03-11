@@ -55,17 +55,17 @@ class Model():
 		with tf.name_scope("MDN"):
 			self.mixture_params = 8
 			self.output_units = self.mixture_params * self.mixtures
-			output = tf.reshape(tf.concat(outputs[:-1], 0), [-1, hidden_size])#[seqlen-1*batch_size, hidden_size]
+			output = tf.reshape(tf.concat(outputs, 0), [-1, hidden_size])#[seqlen*batch_size, hidden_size]
 			softmax_w = tf.get_variable("softmax_w", [hidden_size, self.output_units], dtype=tf.float32)
 			softmax_b = tf.get_variable("softmax_b", [self.output_units], dtype=tf.float32, initializer=tf.constant_initializer(0.5))
 			logits = tf.matmul(output, softmax_w) + softmax_b#[seqlen-1*batch_size, output_units]
 
 			self._softmax_w = softmax_w
 
-			h_xyz = tf.reshape(logits, (self.seq_len-1, self.batch_size, self.output_units))
+			h_xyz = tf.reshape(logits, (self.seq_len, self.batch_size, self.output_units))
 			h_xyz = tf.transpose(h_xyz, [1,2,0])#[batch_size, output_units, seqlen-1]
 
-			seq_delta = self.x[:,:3,1:] - self.x[:,:3,:-1]#ground truth [batch_size, 3, seqlen-1]
+			seq_delta = self.y_[:,:3,:] - self.x[:,:3,:]#ground truth [batch_size, 3, seqlen-1]
 			delta1, delta2, delta3 = tf.split(seq_delta, 3, 1)#delta for x y z, each [batch_size, 1, seqlen-1]
 
 			mu1, mu2, mu3, s1, s2, s3, rho, theta = tf.split(h_xyz, self.mixture_params, 1)#each is [batch_size, mixtures, seqlen-1]
@@ -127,7 +127,7 @@ class Model():
 		seq_feed = np.zeros((self.batch_size, self.coords, self.seq_len))
 		seq_feed[0,:,:] = seq[:,:]
 		offset_draw = np.zeros((3))
-		for sl_draw in range(sl_pre,self.seq_len-1):
+		for sl_draw in range(sl_pre,self.seq_len):
 			feed_dict = {self.x:seq_feed}
 			for i, (c, h) in enumerate(self._initial_state):
 				feed_dict[c] = state[i].c
