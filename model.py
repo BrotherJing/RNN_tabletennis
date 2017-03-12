@@ -66,9 +66,9 @@ class Model():
 			h_xyz = tf.transpose(h_xyz, [1,2,0])#[batch_size, output_units, seqlen-1]
 
 			seq_delta = self.y_[:,:3,:] - self.x[:,:3,:]#ground truth [batch_size, 3, seqlen-1]
-			delta1, delta2, delta3 = tf.split(seq_delta, 3, 1)#delta for x y z, each [batch_size, 1, seqlen-1]
+			delta1, delta2, delta3 = tf.split(seq_delta, 3, 1)#delta for x y z, each [batch_size, 1, seqlen]
 
-			mu1, mu2, mu3, s1, s2, s3, rho, theta = tf.split(h_xyz, self.mixture_params, 1)#each is [batch_size, mixtures, seqlen-1]
+			mu1, mu2, mu3, s1, s2, s3, rho, theta = tf.split(h_xyz, self.mixture_params, 1)#each is [batch_size, mixtures, seqlen]
 
 			max_theta = tf.reduce_max(theta, 1, keep_dims=True)#max over all mixtures
 			theta = tf.subtract(theta, max_theta)
@@ -76,15 +76,19 @@ class Model():
 			theta_norm = tf.reciprocal(tf.reduce_sum(theta, 1, keep_dims=True))
 			theta = tf.multiply(theta_norm, theta)
 
-			s1 = tf.exp(s1)
-			s2 = tf.exp(s2)
-			s3 = tf.exp(s3)#explode?
-			rho = tf.tanh(rho)
+			self._s1 = s1 = tf.exp(s1)
+			self._s2 = s2 = tf.exp(s2)
+			self._s3 = s3 = tf.exp(s3)#explode?
+			self._rho = rho = tf.tanh(rho)
+
+			self._theta_check = tf.reduce_sum(theta, 1)
 
 			p_xy = tf_2d_normal(delta1, delta2, mu1, mu2, s1, s2, rho)
 			p_z = tf_1d_normal(delta3, mu3, s3)
-			p = tf.multiply(p_xy, p_z)#[batch_size, mixtures, seqlen-1] should be all [0,1]
+			p = tf.multiply(p_xy, p_z)#[batch_size, mixtures, seqlen] should be all [0,1]
 
+			self._p_xy = p_xy
+			self._p_z = p_z
 			self._p_sum = p_sum = tf.reduce_sum(tf.multiply(p, theta), 1)#sum along the mixture dimension
 			loss = -tf.log(tf.maximum(p_sum, 1e-20))
 
@@ -127,7 +131,7 @@ class Model():
 		seq_feed = np.zeros((self.batch_size, self.coords, self.seq_len))
 		seq_feed[0,:,:] = seq[:,:]
 		offset_draw = np.zeros((3))
-		for sl_draw in range(sl_pre,self.seq_len):
+		for sl_draw in range(sl_pre,self.seq_len-1):
 			feed_dict = {self.x:seq_feed}
 			for i, (c, h) in enumerate(self._initial_state):
 				feed_dict[c] = state[i].c
@@ -177,6 +181,34 @@ class Model():
 	@property
 	def p_sum(self):
 		return self._p_sum
+
+	@property
+	def p_xy(self):
+		return self._p_xy
+
+	@property
+	def p_z(self):
+		return self._p_z
+
+	@property
+	def s1(self):
+		return self._s1
+
+	@property
+	def s2(self):
+		return self._s2
+
+	@property
+	def s3(self):
+		return self._s3
+
+	@property
+	def rho(self):
+		return self._rho
+
+	@property
+	def theta_check(self):
+		return self._theta_check
 
 	@property
 	def softmax_w(self):

@@ -60,11 +60,11 @@ else:
 	config['overlap_rate'] = 0.5
 	config['lr_decay'] = 0.95
 	config['max_epoch'] = 10
-	config['max_max_epoch'] = 20
+	config['max_max_epoch'] = 30
 config['learning_rate'] = 0.005
 config['num_layers'] = 2
 config['hidden_size'] = 64
-config['mixtures'] = 3
+config['mixtures'] = 2
 config['keep_prob'] = 0.9
 config['max_grad_norm'] = 0.5
 config['init_scale'] = 0.01
@@ -102,7 +102,8 @@ def main(_):
 			tf.summary.scalar("square error loss", model.cost)
 			tf.summary.histogram("prob", model.p_sum)
 			tf.summary.histogram("w", model.softmax_w)
-
+			tf.summary.histogram("p_xy", model.p_xy)
+			tf.summary.histogram("p_z", model.p_z)
 		with tf.name_scope("Test"):
 			with tf.variable_scope("Model", reuse=True, initializer=initializer):
 				mtest = Model(False, config)

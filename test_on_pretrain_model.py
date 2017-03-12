@@ -41,18 +41,18 @@ if filename=='seq_all.csv':
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 20
 elif filename =='all_data.csv':
-	config['seq_len'] = 40
-	config['batch_size'] = 20
+	config['seq_len'] = 60
+	config['batch_size'] = 64
 	config['overlap_rate'] = 0.8
 	config['lr_decay'] = 0.98
-	config['max_epoch'] = 60
-	config['max_max_epoch'] = 100
+	config['max_epoch'] = 10
+	config['max_max_epoch'] = 20
 else:
 	config['seq_len'] = 60
 	config['batch_size'] = 64
 	config['overlap_rate'] = 0.5
 	config['lr_decay'] = 0.9
-	config['max_epoch'] = 10
+	config['max_epoch'] = 20
 	config['max_max_epoch'] = 20
 config['learning_rate'] = 0.005
 config['num_layers'] = 2
@@ -104,11 +104,11 @@ def main(_):
 
 		for i in range(config['max_epoch']):
 			
-			test_perplexity = run_epoch(session, initial_state, test_cost, X_test, y_test, placeholder_x, placeholder_y)
-			print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
+			#test_perplexity = run_epoch(session, initial_state, test_cost, X_test, y_test, placeholder_x, placeholder_y)
+			#print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
 			#sample(session, placeholder_x, initial_state, test_outputs, config, X_test[i], sl_pre=config['seq_len']/4);
-			sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test[i], predict_len=120, sl_pre=config['seq_len']/2)
+			sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test[np.random.choice(N_test)], predict_len=120, sl_pre=config['seq_len']/2)
 
 if __name__ == '__main__':
 	tf.app.run(main=main)
