@@ -1,0 +1,5 @@
+set(Eigen_URL http://bazel-mirror.storage.googleapis.com/bitbucket.org/eigen/eigen/get/60578b474802.tar.gz,https://bitbucket.org/eigen/eigen/get/60578b474802.tar.gz,)
+set(Eigen_ARCHIVE_HASH 60578b474802)
+set(Eigen_HASH SHA256=7527cda827aff351981ebd910012e16be4d899c28a9ae7f143ae60e7f3f7b83d)
+set(Eigen_DIR eigen-eigen-60578b474802)
+set(Eigen_INSTALL_DIR /home/jing/local)
