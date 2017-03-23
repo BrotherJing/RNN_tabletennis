@@ -92,7 +92,8 @@ def main(_):
 
 	print "Train with %d epochs, %d iterations"%(config['max_max_epoch'], N*config['max_max_epoch']/config['batch_size'])
 
-	with tf.Graph().as_default():
+	g = tf.Graph()
+	with g.as_default():
 		initializer = tf.random_uniform_initializer(-config['init_scale'],
 			config['init_scale'])
 

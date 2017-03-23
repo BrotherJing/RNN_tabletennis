@@ -4,6 +4,7 @@ import matplotlib as plt
 from dataloader import *
 from model import *
 from util_sample import *
+from tensorflow.python.framework.graph_util import convert_variables_to_constants
 
 def run_epoch(session, initial_state, cost, X, y_, placeholder_x, placeholder_y):
 	costs = 0.0
@@ -82,33 +83,62 @@ def main(_):
 
 	config['coords'] = coords
 
-	with tf.Session() as session:
+	g = tf.Graph()
+	with g.as_default():
+		with tf.Session() as session:
 
-		saver = tf.train.import_meta_graph(directory+'my-model.meta')
-		saver.restore(session, directory+'my-model')
+			saver = tf.train.import_meta_graph(directory+'my-model.meta')
+			saver.restore(session, directory+'my-model')
 
-		initial_state_c = tf.get_collection("initial_state_c")
-		initial_state_h = tf.get_collection("initial_state_h")
-		initial_state = []
-		for i in range(len(initial_state_c)):
-			initial_state.append((initial_state_c[i], initial_state_h[i]))
-		final_state_c = tf.get_collection("final_state_c")
-		final_state_h = tf.get_collection("final_state_h")
-		final_state = []
-		for i in range(len(final_state_c)):
-			final_state.append((final_state_c[i], final_state_h[i]))
-		test_cost = tf.get_collection("test_cost")[0]
-		placeholder_x = tf.get_collection("x")[0]
-		placeholder_y = tf.get_collection("y_")[0]
-		test_outputs = tf.get_collection("test_outputs")
+			initial_state_c = tf.get_collection("initial_state_c")
+			initial_state_h = tf.get_collection("initial_state_h")
+			initial_state = []
+			for i in range(len(initial_state_c)):
+				initial_state.append((initial_state_c[i], initial_state_h[i]))
+				print initial_state_c[i]
+				print initial_state_h[i]
+			final_state_c = tf.get_collection("final_state_c")
+			final_state_h = tf.get_collection("final_state_h")
+			final_state = []
+			for i in range(len(final_state_c)):
+				final_state.append((final_state_c[i], final_state_h[i]))
+				print final_state_c[i]
+				print final_state_h[i]
+			test_cost = tf.get_collection("test_cost")[0]
+			placeholder_x = tf.get_collection("x")[0]
+			placeholder_y = tf.get_collection("y_")[0]
+			test_outputs = tf.get_collection("test_outputs")
 
-		for i in range(config['max_epoch']):
-			
-			#test_perplexity = run_epoch(session, initial_state, test_cost, X_test, y_test, placeholder_x, placeholder_y)
-			#print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
+			print placeholder_x
+			print placeholder_y
+			for i in test_outputs:
+				print i
 
-			#sample(session, placeholder_x, initial_state, test_outputs, config, X_test[i], sl_pre=config['seq_len']/4);
-			sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test[np.random.choice(N_test)], predict_len=120, sl_pre=config['seq_len']/2)
+
+			#for i in range(config['max_epoch']):
+				
+				#test_perplexity = run_epoch(session, initial_state, test_cost, X_test, y_test, placeholder_x, placeholder_y)
+				#print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
+
+				#sample(session, placeholder_x, initial_state, test_outputs, config, X_test[i], sl_pre=config['seq_len']/4);
+				#sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test[np.random.choice(N_test)], predict_len=120, sl_pre=config['seq_len']/2)
+
+			test_outputs = []
+			test_outputs.append("Test/Model/RNN/multi_rnn_cell_59/cell_0/lstm_cell/add_3")
+			test_outputs.append("Test/Model/RNN/multi_rnn_cell_59/cell_0/lstm_cell/mul_5")
+			test_outputs.append("Test/Model/RNN/multi_rnn_cell_59/cell_1/lstm_cell/add_3")
+			test_outputs.append("Test/Model/RNN/multi_rnn_cell_59/cell_1/lstm_cell/mul_5")
+			test_outputs.append("Test/Model/MDN/split_1")
+			#test_outputs.append("Test/Model/MDN/split_1")
+			#test_outputs.append("Test/Model/MDN/split_1")
+			test_outputs.append("Test/Model/MDN/Exp_1")
+			test_outputs.append("Test/Model/MDN/Exp_2")
+			test_outputs.append("Test/Model/MDN/Exp_3")
+			test_outputs.append("Test/Model/MDN/Tanh")
+			test_outputs.append("Test/Model/MDN/Mul")
+
+			minimal_graph = convert_variables_to_constants(session, session.graph_def, test_outputs)
+	    	tf.train.write_graph(minimal_graph, directory, 'export-graph.pb', as_text=False)
 
 if __name__ == '__main__':
 	tf.app.run(main=main)
