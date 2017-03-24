@@ -32,7 +32,7 @@ class DataLoad():
 		df_arr = self.preprocess(df_arr)
 
 		for i in range(1,N,1):
-			if verbose and i%1000==0:
+			if verbose and i%10000==0:
 				print "load %5d of %5d"%(i,N)
 			if int(df_arr[i,3])==1:#encounter a new sequence
 				end_idx = i

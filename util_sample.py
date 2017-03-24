@@ -100,8 +100,8 @@ def sample_more(session, placeholder_x, initial_state, final_state, outputs, con
 		draw = rv.rvs()
 		seq_feed[0,:,i+1] = seq_feed[0,:,i] + draw
 
-	for i in range(predict_len):
-		print seq_feed[0,0,i], seq_feed[0,1,i], seq_feed[0,2,i]
+	#for i in range(predict_len):
+		#print seq_feed[0,0,i], seq_feed[0,1,i], seq_feed[0,2,i]
 
 	fig = plt.figure()
 	ax = fig.gca(projection='3d')
