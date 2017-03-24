@@ -61,6 +61,7 @@ class DataLoad():
 
 	def preprocess(self, data):
 		maxZ = np.max(data[:,2])
+		print "max z is %d"%maxZ
 		data[:,2] = data[:,2]/maxZ
 		data[:,0] = data[:,0]/1525
 		data[:,1] = data[:,1]/2740

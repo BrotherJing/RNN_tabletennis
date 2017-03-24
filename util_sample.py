@@ -60,7 +60,7 @@ def sample(session, placeholder_x, initial_state, outputs, config, seq, sl_pre =
 	plt.show()
 
 def sample_more(session, placeholder_x, initial_state, final_state, outputs, config, seq, predict_len=40, sl_pre = 4, bias=1.0):
-	assert seq.shape[1] == config['seq_len'] and seq.shape[0] == config['coords'], 'Feed a sequence in [crd,sl]'
+	assert seq.shape[0] == config['coords'], 'Feed a sequence in [crd,sl]'
 	assert sl_pre > 1, 'Please provide two predefined coordinates' 
 
 	state = session.run(initial_state)
@@ -99,6 +99,9 @@ def sample_more(session, placeholder_x, initial_state, final_state, outputs, con
 		rv = multivariate_normal(mean, cov)
 		draw = rv.rvs()
 		seq_feed[0,:,i+1] = seq_feed[0,:,i] + draw
+
+	for i in range(predict_len):
+		print seq_feed[0,0,i], seq_feed[0,1,i], seq_feed[0,2,i]
 
 	fig = plt.figure()
 	ax = fig.gca(projection='3d')

@@ -9,7 +9,7 @@ import os.path
 directory = 'data/'
 #filename = 'all_data.csv'
 #filename = 'seq_all.csv'
-filename = 'coords.csv'
+filename = 'input.csv'
 
 config = {}
 if filename=='seq_all.csv':
@@ -44,22 +44,22 @@ config['init_scale'] = 0.01
 train_ratio = 0.8
 
 def main(_):
-	dl = DataLoad(directory, filename)
 
-	dl.load_data(config['seq_len'], config['overlap_rate'], verbose = True)
+	df = pd.read_csv(filename, delimiter=' ')
+	print "the shape of the data is ", df.shape
 
-	dl.split_train_test(train_ratio)
+	df_arr = df.astype(float).as_matrix()
+	df = None
+	start_idx = 0
+	N,D = df_arr.shape#N*4
 
-	data = dl.data
-	X_train = np.transpose(data['X_train'], [0,2,1])
-	y_train = np.transpose(data['y_train'], [0,2,1])
-	X_test = np.transpose(data['X_test'], [0,2,1])
-	y_test = np.transpose(data['y_test'], [0,2,1])
+	df_arr[:,0] = df_arr[:,0]/1525
+	df_arr[:,1] = df_arr[:,1]/2740
+	df_arr[:,2] = df_arr[:,2]/458
 
-	N, coords, _ = X_train.shape
-	N_test = X_test.shape[0]
+	X_test = np.transpose(df_arr, [1,0])
 
-	config['coords'] = coords
+	config['coords'] = 3
 
 	g = tf.Graph()
 	with g.as_default():
@@ -99,8 +99,7 @@ def main(_):
 			test_outputs.append(session.graph.get_tensor_by_name("Test/Model/MDN/Tanh:0"))
 			test_outputs.append(session.graph.get_tensor_by_name("Test/Model/MDN/Mul:0"))
 
-			for i in range(config['max_epoch']):
-				sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test[np.random.choice(N_test)], predict_len=120, sl_pre=config['seq_len']/2)
+			sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test, predict_len=120, sl_pre=config['seq_len']/2)
 
 if __name__ == '__main__':
 	tf.app.run(main=main)
