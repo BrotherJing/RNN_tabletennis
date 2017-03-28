@@ -1,6 +1,8 @@
 #ifndef HEADER_MAIN
 #define HEADER_MAIN
 
+#define TIMING
+
 const char* placeholder_x = "Test/Model/Input_data:0";
 const char* initial_state_c_0 = "Test/Model/zeros:0";
 const char* initial_state_h_0 = "Test/Model/zeros_1:0";
