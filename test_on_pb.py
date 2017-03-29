@@ -27,8 +27,8 @@ elif filename =='all_data.csv':
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 20
 else:
-	config['seq_len'] = 60
-	config['batch_size'] = 64
+	config['seq_len'] = 120
+	config['batch_size'] = 20
 	config['overlap_rate'] = 0.5
 	config['lr_decay'] = 0.9
 	config['max_epoch'] = 20
@@ -81,10 +81,10 @@ def main(_):
 			initial_state = []
 			initial_state.append((initial_state_c_0, initial_state_h_0))
 			initial_state.append((initial_state_c_1, initial_state_h_1))
-			final_state_c_0 = session.graph.get_tensor_by_name("Test/Model/RNN/multi_rnn_cell_59/cell_0/lstm_cell/add_3:0")
-			final_state_h_0 = session.graph.get_tensor_by_name("Test/Model/RNN/multi_rnn_cell_59/cell_0/lstm_cell/mul_5:0")
-			final_state_c_1 = session.graph.get_tensor_by_name("Test/Model/RNN/multi_rnn_cell_59/cell_1/lstm_cell/add_3:0")
-			final_state_h_1 = session.graph.get_tensor_by_name("Test/Model/RNN/multi_rnn_cell_59/cell_1/lstm_cell/mul_5:0")
+			final_state_c_0 = session.graph.get_tensor_by_name("Test/Model/RNN/multi_rnn_cell/cell_0/lstm_cell/add_3:0")
+			final_state_h_0 = session.graph.get_tensor_by_name("Test/Model/RNN/multi_rnn_cell/cell_0/lstm_cell/mul_5:0")
+			final_state_c_1 = session.graph.get_tensor_by_name("Test/Model/RNN/multi_rnn_cell/cell_1/lstm_cell/add_3:0")
+			final_state_h_1 = session.graph.get_tensor_by_name("Test/Model/RNN/multi_rnn_cell/cell_1/lstm_cell/mul_5:0")
 			final_state = []
 			final_state.append((final_state_c_0, final_state_h_0))
 			final_state.append((final_state_c_1, final_state_h_1))

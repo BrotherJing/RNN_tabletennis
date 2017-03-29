@@ -55,9 +55,9 @@ elif filename =='all_data.csv':
 	config['max_epoch'] = 60
 	config['max_max_epoch'] = 100
 else:
-	config['seq_len'] = 60
+	config['seq_len'] = 120
 	config['batch_size'] = 64
-	config['overlap_rate'] = 0.5
+	config['overlap_rate'] = 0.0
 	config['lr_decay'] = 0.95
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 30
@@ -140,7 +140,8 @@ def main(_):
 				test_perplexity = run_epoch(session, mtest, X_test, y_test)
 				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
-			mtest.sample(session, X_test[5], sl_pre=config['seq_len']/2);
+			for i in range(config['max_max_epoch']):
+				mtest.sample(session, X_test[5], sl_pre=config['seq_len']/2);
 
 			saver.save(session, directory+'my-model')
 

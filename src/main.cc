@@ -5,6 +5,7 @@
 
 #include <stdlib.h>//srand, rand
 #include <time.h>//time
+#include <sys/time.h>
 
 #include <Eigen/Eigenvalues> 
 
@@ -71,44 +72,51 @@ Status sample(std::unique_ptr<Session> *session,
   double mean[3];
   double stderr[4];
 
-  std::vector<Coords> seq_feed((predict_len/SEQUENCE_LENGTH+1)*SEQUENCE_LENGTH);
+  std::vector<Coords> seq_feed(predict_len+1);
   for(int i=0;i<sl_pre+1;++i){
     seq_feed[i] = seq[i];
   }
 
   std::vector<Tensor> outputs;
 
-  for(int i=sl_pre;i<predict_len;++i){
-    int sl_draw = i % SEQUENCE_LENGTH;
-    int block = i / SEQUENCE_LENGTH;
-    fillPlaceholder(seq_feed, inputs[4].second, block*SEQUENCE_LENGTH, SEQUENCE_LENGTH);
+#ifdef TIMING
+  struct timeval t1,t2;
+  double timeuse;
+#endif
 
+  for(int i=0;i<predict_len;++i){
+
+#ifdef TIMING
+    gettimeofday(&t1,NULL);
+#endif
+    
+    fillPlaceholder(seq_feed, inputs[4].second, i);
+  
     Status run_sample = (*session)->Run(inputs, {
-      final_state_c_0, final_state_h_0,
-      final_state_c_1, final_state_h_1,
       mu1, mu2, mu3,
       s1, s2, s3,
-      rho, theta
+      rho, theta,
+      final_state_c_0, final_state_h_0,
+      final_state_c_1, final_state_h_1
     }, {}, &outputs);
+    
     if(!run_sample.ok()){
       return run_sample;
     }
-    if(sl_draw == SEQUENCE_LENGTH-1){
-      if(!(inputs[0].second.CopyFrom(outputs[0], outputs[0].shape())&&
-      inputs[1].second.CopyFrom(outputs[1], outputs[1].shape())&&
-      inputs[2].second.CopyFrom(outputs[2], outputs[2].shape())&&
-      inputs[3].second.CopyFrom(outputs[3], outputs[3].shape()))){
-        return Status::OK();
-      }
+    if(!(inputs[0].second.CopyFrom(outputs[8], outputs[8].shape())&&
+    inputs[1].second.CopyFrom(outputs[9], outputs[9].shape())&&
+    inputs[2].second.CopyFrom(outputs[10], outputs[10].shape())&&
+    inputs[3].second.CopyFrom(outputs[11], outputs[11].shape()))){
+      return Status::OK();
     }
-    int idx = sampleTheta(outputs[11], sl_draw);//theta
-    mean[0] = outputs[4].tensor<float, 3>()(0, idx, sl_draw);
-    mean[1] = outputs[5].tensor<float, 3>()(0, idx, sl_draw);
-    mean[2] = outputs[6].tensor<float, 3>()(0, idx, sl_draw);
-    stderr[0] = exp(-1*bias)*outputs[7].tensor<float, 3>()(0, idx, sl_draw);
-    stderr[1] = exp(-1*bias)*outputs[8].tensor<float, 3>()(0, idx, sl_draw);
-    stderr[2] = exp(-1*bias)*outputs[9].tensor<float, 3>()(0, idx, sl_draw);
-    stderr[3] = outputs[10].tensor<float, 3>()(0, idx, sl_draw)*stderr[0]*stderr[1];
+    int idx = sampleTheta(outputs[7], 0);//theta
+    mean[0] = outputs[0].tensor<float, 3>()(0, idx, 0);
+    mean[1] = outputs[1].tensor<float, 3>()(0, idx, 0);
+    mean[2] = outputs[2].tensor<float, 3>()(0, idx, 0);
+    stderr[0] = exp(-1*bias)*outputs[3].tensor<float, 3>()(0, idx, 0);
+    stderr[1] = exp(-1*bias)*outputs[4].tensor<float, 3>()(0, idx, 0);
+    stderr[2] = exp(-1*bias)*outputs[5].tensor<float, 3>()(0, idx, 0);
+    stderr[3] = outputs[6].tensor<float, 3>()(0, idx, 0)*stderr[0]*stderr[1];
     
     Eigen::MatrixXd covar(3,3);
     covar << stderr[0]*stderr[0], stderr[3], 0,
@@ -120,7 +128,14 @@ Status sample(std::unique_ptr<Session> *session,
     normal_random_variable sample { means, covar };
     
     Eigen::VectorXd draw = sample();
-    seq_feed[i+1] = Coords{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
+    if(i>=sl_pre)
+      seq_feed[i+1] = Coords{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
+
+#ifdef TIMING
+    gettimeofday(&t2,NULL);
+    timeuse = (t2.tv_sec - t1.tv_sec)*1000.0 + (t2.tv_usec - t1.tv_usec)/1000.0;
+    printf("Use Time:%fms\n",timeuse);
+#endif
   }
   for(int i=0;i<predict_len;++i){
     seq_pred.push_back(Coords{seq_feed[i].x*X_NORM, seq_feed[i].y*Y_NORM, seq_feed[i].z*Z_NORM});
@@ -163,14 +178,12 @@ void saveSequence(string output_seq, std::vector<Coords> &seq){
   output.close();
 }
 
-void fillPlaceholder(std::vector<Coords> &seq, Tensor &x, int offset, int length){
+void fillPlaceholder(std::vector<Coords> &seq, Tensor &x, int idx){
   auto tensor = x.tensor<float, 3>();
-  for(int i=0;i<length;++i){
-    Coords coord = seq[i+offset];
-    tensor(0,0,i) = coord.x;
-    tensor(0,1,i) = coord.y;
-    tensor(0,2,i) = coord.z;
-  }
+  Coords coord = seq[idx];
+  tensor(0,0,0) = coord.x;
+  tensor(0,1,0) = coord.y;
+  tensor(0,2,0) = coord.z;
 }
 
 int main(int argc, char **argv) {
@@ -217,7 +230,7 @@ int main(int argc, char **argv) {
   std::vector<Coords> seq_pred;
   loadSequence(input_seq, seq);
 
-  Tensor x(DT_FLOAT, TensorShape({BATCH_SIZE, NUM_COORDS, SEQUENCE_LENGTH}));
+  Tensor x(DT_FLOAT, TensorShape({BATCH_SIZE, NUM_COORDS, 1}));
 
   std::vector<std::pair<tensorflow::string, Tensor> > inputs = {
     {initial_state_c_0, initialized_outputs[0]},
