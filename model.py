@@ -7,18 +7,6 @@ import matplotlib.mlab as mlab
 from dataloader import *
 from util_MDN import *
 
-'''
-flags = tf.flags
-logging = tf.logging
-
-flags.DEFINE_string('model','small','small, medium or large.')
-flags.DEFINE_bool('use_fp16', False, 'train using 16-bit floats instead of 32-bit')
-
-FLAGS = flags.FLAGS
-
-def data_type():
-	return tf.float16 if FLAGS.use_fp16 else tf.float32
-'''
 class Model():
 	def __init__(self, is_training, config):
 		num_layers = config['num_layers']
@@ -31,8 +19,9 @@ class Model():
 		learning_rate = config['learning_rate']
 		keep_prob = config['keep_prob']
 
-		self.x = tf.placeholder(tf.float32, shape=[self.batch_size, self.coords, self.seq_len], name='Input_data')
-		self.y_ = tf.placeholder(tf.float32, shape=[self.batch_size, self.coords, self.seq_len], name='Ground_truth')
+		# input sequence length can be 1 or config['seq_len'], depending on training or testing phase
+		self.x = tf.placeholder(tf.float32, shape=[self.batch_size, self.coords, None], name='Input_data')
+		self.y_ = tf.placeholder(tf.float32, shape=[self.batch_size, self.coords, None], name='Ground_truth')
 		
 		def lstm_cell():
 			return tf.contrib.rnn.LSTMCell(hidden_size, forget_bias=0.0, state_is_tuple=True, use_peepholes=True)
@@ -47,10 +36,15 @@ class Model():
 		outputs = []
 		state = self._initial_state
 		with tf.variable_scope("RNN"):
-			for timestep in range(self.seq_len):
-				if timestep>0: tf.get_variable_scope().reuse_variables()
-				(cell_output, state) = cell(self.x[:,:,timestep], state)
+			if not is_training:
+				#for testing, no recurrent inside the model
+				(cell_output, state) = cell(self.x[:,:,0], state)
 				outputs.append(cell_output)
+			else:
+				for timestep in range(self.seq_len):
+					if timestep>0: tf.get_variable_scope().reuse_variables()
+					(cell_output, state) = cell(self.x[:,:,timestep], state)
+					outputs.append(cell_output)
 		
 		with tf.name_scope("MDN"):
 			self.mixture_params = 8
@@ -62,7 +56,7 @@ class Model():
 
 			self._softmax_w = softmax_w
 
-			h_xyz = tf.reshape(logits, (self.seq_len, self.batch_size, self.output_units))
+			h_xyz = tf.reshape(logits, (-1, self.batch_size, self.output_units))
 			h_xyz = tf.transpose(h_xyz, [1,2,0])#[batch_size, output_units, seqlen-1]
 
 			seq_delta = self.y_[:,:3,:] - self.x[:,:3,:]#ground truth [batch_size, 3, seqlen-1]
@@ -128,27 +122,27 @@ class Model():
 
 		state = session.run(self._initial_state)
 
-		seq_feed = np.zeros((self.batch_size, self.coords, self.seq_len))
-		seq_feed[0,:,:] = seq[:,:]
-		offset_draw = np.zeros((3))
-		for sl_draw in range(sl_pre,self.seq_len-1):
-			feed_dict = {self.x:seq_feed}
+		seq_feed = np.zeros((self.batch_size, self.coords, self.seq_len+1))
+		seq_feed[0,:,:-1] = seq[:,:]
+
+		for sl_draw in range(self.seq_len):
+			feed_dict = {self.x:seq_feed[:,:,sl_draw:sl_draw+1]}
 			for i, (c, h) in enumerate(self._initial_state):
 				feed_dict[c] = state[i].c
 				feed_dict[h] = state[i].h
-			result = session.run([self._outputs], feed_dict=feed_dict)[0]
+			result, state = session.run([self._outputs, self.final_state], feed_dict=feed_dict)
 
-			idx_theta = self.sample_theta(result[7][0,:,sl_draw])
+			idx_theta = self.sample_theta(result[7][0,:,0])
 			
 			mean = np.zeros((3))
-			mean[0] = result[0][0,idx_theta,sl_draw]
-			mean[1] = result[1][0,idx_theta,sl_draw]
-			mean[2] = result[2][0,idx_theta,sl_draw]
+			mean[0] = result[0][0,idx_theta,0]
+			mean[1] = result[1][0,idx_theta,0]
+			mean[2] = result[2][0,idx_theta,0]
 			cov = np.zeros((3,3))
-			s1 = np.exp(-1*bias)*result[3][0,idx_theta,sl_draw]
-			s2 = np.exp(-1*bias)*result[4][0,idx_theta,sl_draw]
-			s3 = np.exp(-1*bias)*result[5][0,idx_theta,sl_draw]
-			s12 = result[6][0,idx_theta,sl_draw]*s1*s2
+			s1 = np.exp(-1*bias)*result[3][0,idx_theta,0]
+			s2 = np.exp(-1*bias)*result[4][0,idx_theta,0]
+			s3 = np.exp(-1*bias)*result[5][0,idx_theta,0]
+			s12 = result[6][0,idx_theta,0]*s1*s2
 			cov[0,0] = np.square(s1)
 			cov[1,1] = np.square(s2)
 			cov[2,2] = np.square(s3)
@@ -160,7 +154,8 @@ class Model():
 			#cov += np.identity(3)*1e-6
 			rv = multivariate_normal(mean, cov)
 			draw = rv.rvs()
-			seq_feed[0,:,sl_draw+1] = seq_feed[0,:,sl_draw] + draw
+			if sl_draw>=sl_pre:
+				seq_feed[0,:,sl_draw+1] = seq_feed[0,:,sl_draw] + draw
 		fig = plt.figure()
 		ax = fig.gca(projection='3d')
 		ax.plot(seq[0,:], seq[1,:], seq[2,:],'r')

@@ -49,9 +49,9 @@ elif filename =='all_data.csv':
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 20
 else:
-	config['seq_len'] = 60
-	config['batch_size'] = 64
-	config['overlap_rate'] = 0.5
+	config['seq_len'] = 120
+	config['batch_size'] = 20
+	config['overlap_rate'] = 0.0
 	config['lr_decay'] = 0.9
 	config['max_epoch'] = 20
 	config['max_max_epoch'] = 20
@@ -120,14 +120,13 @@ def main(_):
 				#test_perplexity = run_epoch(session, initial_state, test_cost, X_test, y_test, placeholder_x, placeholder_y)
 				#print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
-				#sample(session, placeholder_x, initial_state, test_outputs, config, X_test[i], sl_pre=config['seq_len']/4);
 				#sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test[np.random.choice(N_test)], predict_len=120, sl_pre=config['seq_len']/2)
 
 			test_outputs = []
-			test_outputs.append("Test/Model/RNN/multi_rnn_cell_59/cell_0/lstm_cell/add_3")
-			test_outputs.append("Test/Model/RNN/multi_rnn_cell_59/cell_0/lstm_cell/mul_5")
-			test_outputs.append("Test/Model/RNN/multi_rnn_cell_59/cell_1/lstm_cell/add_3")
-			test_outputs.append("Test/Model/RNN/multi_rnn_cell_59/cell_1/lstm_cell/mul_5")
+			test_outputs.append("Test/Model/RNN/multi_rnn_cell/cell_0/lstm_cell/add_3")
+			test_outputs.append("Test/Model/RNN/multi_rnn_cell/cell_0/lstm_cell/mul_5")
+			test_outputs.append("Test/Model/RNN/multi_rnn_cell/cell_1/lstm_cell/add_3")
+			test_outputs.append("Test/Model/RNN/multi_rnn_cell/cell_1/lstm_cell/mul_5")
 			test_outputs.append("Test/Model/MDN/split_1")
 			#test_outputs.append("Test/Model/MDN/split_1")
 			#test_outputs.append("Test/Model/MDN/split_1")
