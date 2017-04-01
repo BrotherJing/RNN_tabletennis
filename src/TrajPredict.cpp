@@ -1,13 +1,4 @@
-#include <fstream>
-#include <iostream>
-#include <cmath>
-
-#include <stdlib.h>//srand, rand
-#include <time.h>//time
-#include <sys/time.h>//for timing
-
 #include "TrajPredict.h"
-#include "main.h"
 
 using namespace tensorflow;
 using namespace tensorflow::ops;
@@ -17,7 +8,37 @@ using tensorflow::Status;
 using tensorflow::string;
 using tensorflow::int32;
 
-Status initialize(std::unique_ptr<Session> *session, std::vector<Tensor> *initialized_outputs){
+const char* placeholder_x = "Test/Model/Input_data:0";
+const char* initial_state_c_0 = "Test/Model/zeros:0";
+const char* initial_state_h_0 = "Test/Model/zeros_1:0";
+const char* initial_state_c_1 = "Test/Model/zeros_2:0";
+const char* initial_state_h_1 = "Test/Model/zeros_3:0";
+
+const char* final_state_c_0 = "Test/Model/RNN/multi_rnn_cell/cell_0/lstm_cell/add_3:0";
+const char* final_state_h_0 = "Test/Model/RNN/multi_rnn_cell/cell_0/lstm_cell/mul_5:0";
+const char* final_state_c_1 = "Test/Model/RNN/multi_rnn_cell/cell_1/lstm_cell/add_3:0";
+const char* final_state_h_1 = "Test/Model/RNN/multi_rnn_cell/cell_1/lstm_cell/mul_5:0";
+
+const char* mu1 = "Test/Model/MDN/split_1:0";
+const char* mu2 = "Test/Model/MDN/split_1:1";
+const char* mu3 = "Test/Model/MDN/split_1:2";
+const char* s1 = "Test/Model/MDN/Exp_1:0";
+const char* s2 = "Test/Model/MDN/Exp_2:0";
+const char* s3 = "Test/Model/MDN/Exp_3:0";
+const char* rho = "Test/Model/MDN/Tanh:0";
+const char* theta = "Test/Model/MDN/Mul:0";
+
+const int BATCH_SIZE = 20;
+const int SEQUENCE_LENGTH = 120;
+const int NUM_COORDS = 3;
+const int SEQ_PRE = 30;
+const int PREDICT_LEN = 100;
+
+const float X_NORM = 1525;
+const float Y_NORM = 2740;
+const float Z_NORM = 458;
+
+Status TrajPredict::initialize(std::unique_ptr<Session> *session, std::vector<Tensor> *initialized_outputs){
   Status run_initialize_status = (*session)->Run({}, {
     initial_state_c_0,
     initial_state_h_0,
@@ -27,7 +48,7 @@ Status initialize(std::unique_ptr<Session> *session, std::vector<Tensor> *initia
   return run_initialize_status;
 }
 
-int sampleTheta(Tensor &theta, int idx){
+int TrajPredict::sampleTheta(Tensor &theta, int idx){
   float stop = rand()*1.0/RAND_MAX;
   float cum = 0.;
   int num_thetas = theta.dim_size(1);
@@ -39,10 +60,8 @@ int sampleTheta(Tensor &theta, int idx){
   return 0;
 }
 
-Status sample(std::unique_ptr<Session> *session, 
-  std::vector<Coords> &seq,
+Status TrajPredict::sample(std::vector<Coords> &seq,
   std::vector<Coords> &seq_pred,
-  std::vector<std::pair<tensorflow::string, Tensor> > &inputs,
   int predict_len, 
   int sl_pre){
 
@@ -57,20 +76,11 @@ Status sample(std::unique_ptr<Session> *session,
 
   std::vector<Tensor> outputs;
 
-#ifdef TIMING
-  struct timeval t1,t2;
-  double timeuse;
-#endif
-
   for(int i=0;i<predict_len;++i){
 
-#ifdef TIMING
-    gettimeofday(&t1,NULL);
-#endif
-    
     fillPlaceholder(seq_feed, inputs[4].second, i);
   
-    Status run_sample = (*session)->Run(inputs, {
+    Status run_sample = (session)->Run(inputs, {
       mu1, mu2, mu3,
       s1, s2, s3,
       rho, theta,
@@ -108,12 +118,6 @@ Status sample(std::unique_ptr<Session> *session,
     Eigen::VectorXd draw = sample();
     if(i>=sl_pre)
       seq_feed[i+1] = Coords{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
-
-#ifdef TIMING
-    gettimeofday(&t2,NULL);
-    timeuse = (t2.tv_sec - t1.tv_sec)*1000.0 + (t2.tv_usec - t1.tv_usec)/1000.0;
-    printf("Use Time:%fms\n",timeuse);
-#endif
   }
   for(int i=0;i<predict_len;++i){
     seq_pred.push_back(Coords{seq_feed[i].x*X_NORM, seq_feed[i].y*Y_NORM, seq_feed[i].z*Z_NORM});
@@ -121,7 +125,7 @@ Status sample(std::unique_ptr<Session> *session,
   return Status::OK();
 }
 
-Status LoadGraph(string graph_file_name, std::unique_ptr<Session> *session){
+Status TrajPredict::LoadGraph(const string graph_file_name, std::unique_ptr<Session> *session){
   GraphDef graph_def;
   Status load_graph_status = ReadBinaryProto(Env::Default(), graph_file_name, &graph_def);
   if(!load_graph_status.ok()){
@@ -135,28 +139,7 @@ Status LoadGraph(string graph_file_name, std::unique_ptr<Session> *session){
   return Status::OK();
 }
 
-void loadSequence(string input_seq, std::vector<Coords> &seq){
-  float x,y,z,max_z=0;
-  std::ifstream input;
-  input.open(input_seq.c_str(), std::ifstream::in);
-  while(!input.eof()){
-    input>>x>>y>>z;
-    Coords coord{x/X_NORM,y/Y_NORM,z/Z_NORM};
-    seq.push_back(coord);
-  }
-  input.close();
-}
-
-void saveSequence(string output_seq, std::vector<Coords> &seq){
-  std::ofstream output;
-  output.open(output_seq.c_str(), std::ios::out|std::ios::trunc);
-  for(int i=0;i<seq.size();++i){
-    output<<seq[i].x<<" "<<seq[i].y<<" "<<seq[i].z<<std::endl;
-  }
-  output.close();
-}
-
-void fillPlaceholder(std::vector<Coords> &seq, Tensor &x, int idx){
+void TrajPredict::fillPlaceholder(std::vector<Coords> &seq, Tensor &x, int idx){
   auto tensor = x.tensor<float, 3>();
   Coords coord = seq[idx];
   tensor(0,0,0) = coord.x;
@@ -164,83 +147,28 @@ void fillPlaceholder(std::vector<Coords> &seq, Tensor &x, int idx){
   tensor(0,2,0) = coord.z;
 }
 
-int main(int argc, char **argv) {
-
+TrajPredict::TrajPredict(const string graph_file_name){
   srand(time(NULL));
-
-  string graph = "/home/jing/Documents/RNN_tabletennis/data/export-graph.pb";
-  string input_seq = "input.csv";
-  string output_seq = "output.csv";
-
-  TrajPredict pred(graph);
-  std::vector<Coords> seq;
-  std::vector<Coords> seq_pred;
-  loadSequence(input_seq, seq);
-  Status run_sample = pred.sample(seq, seq_pred, PREDICT_LEN, SEQ_PRE);
-  if(!run_sample.ok()){
-    LOG(ERROR)<<run_sample;
-    return -1;
-  }
-  std::cout<<"sample finished"<<std::endl;
-  saveSequence(output_seq, seq_pred);
-  std::cout<<"result saved"<<std::endl;
-  /*std::vector<Flag> flag_list = {
-    Flag("graph", &graph, "graph to be excuted"),
-    Flag("input", &input_seq, "input sequence file"),
-  };
-  string usage = tensorflow::Flags::Usage(argv[0], flag_list);
-  const bool parse_result = tensorflow::Flags::Parse(&argc, argv, flag_list);
-  if(!parse_result){
-    LOG(ERROR) << usage;
-    return -1;
-  }
-  tensorflow::port::InitMain(argv[0], &argc, &argv);
-  if(argc > 1){
-    LOG(ERROR)<<"Unknown argument "<<argv[1]<<"\n"<<usage;
-    return -1;
-  }
-
-  std::unique_ptr<Session> session;
-  Status status = LoadGraph(graph, &session);
+  Status status = LoadGraph(graph_file_name, &session);
   if (!status.ok()) {
     LOG(ERROR)<<status;
-    return -1;
+    return;
   }
-  std::cout<<"model loaded"<<std::endl;
-
-  std::vector<Tensor> initialized_outputs;
   Status run_initialize_status = initialize(&session, &initialized_outputs);
   if(!run_initialize_status.ok()){
     LOG(ERROR)<<run_initialize_status;
-    return -1;
+    return;
   }
-  std::cout<<"initialized"<<std::endl;
-
-  std::vector<Coords> seq;
-  std::vector<Coords> seq_pred;
-  loadSequence(input_seq, seq);
-
   Tensor x(DT_FLOAT, TensorShape({BATCH_SIZE, NUM_COORDS, 1}));
-
-  std::vector<std::pair<tensorflow::string, Tensor> > inputs = {
+  inputs = {
     {initial_state_c_0, initialized_outputs[0]},
     {initial_state_h_0, initialized_outputs[1]},
     {initial_state_c_1, initialized_outputs[2]},
     {initial_state_h_1, initialized_outputs[3]},
     {placeholder_x, x}
   };
-  for(int i=0;i<x.dims();++i){
-    std::cout<<"dims "<<i<<": "<<x.dim_size(i)<<std::endl;
-  }
-  Status run_sample = sample(&session, seq, seq_pred, inputs, PREDICT_LEN, SEQ_PRE);
-  if(!run_sample.ok()){
-    LOG(ERROR)<<run_sample;
-    return -1;
-  }
-  std::cout<<"sample finished"<<std::endl;
+}
 
-  saveSequence(output_seq, seq_pred);
-  std::cout<<"result saved"<<std::endl;
-
-  session->Close();*/
+TrajPredict::~TrajPredict(){
+  session->Close();
 }
