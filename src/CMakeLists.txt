@@ -15,5 +15,10 @@ set(PROJECT_INCLUDE_DIRS ${TensorFlow_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${PROT
 set(PROJECT_LIBRARIES ${TensorFlow_LIBRARIES} ${PROTOBUF_LIBRARIES})
 
 include_directories(${PROJECT_INCLUDE_DIRS} /home/jing/local/include)
+include_directories(${PROJECT_SOURCE_DIR}/include)
+
+add_library(trajpred SHARED TrajPredict.cpp)
+target_link_libraries(trajpred ${PROJECT_LIBRARIES})
+
 add_executable(${EXECUTABLE} ${SOURCE_FILES})
 target_link_libraries(${EXECUTABLE} ${PROJECT_LIBRARIES})
