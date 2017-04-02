@@ -4,6 +4,14 @@ LSTM ball trajectory prediction. Original idea from [Applying Deep Learning to B
 
 More detail in the jupyter notebook.
 
+## Installation
+
+1. Install tensorflow for running the python interface.
+
+2. Following [tensorflow-cmake](https://github.com/cjweeks/tensorflow-cmake) to build tensorflow shared library, for running the c++ interface.
+
+3. Download our model from...(TODO)
+
 Visualize the input data
 
 ![Input Data](http://7xrcar.com1.z0.glb.clouddn.com/traj_data.png)
