@@ -56,7 +56,7 @@ elif filename =='all_data.csv':
 	config['max_max_epoch'] = 100
 else:
 	config['seq_len'] = 120
-	config['batch_size'] = 64
+	config['batch_size'] = 20
 	config['overlap_rate'] = 0.0
 	config['lr_decay'] = 0.95
 	config['max_epoch'] = 10
