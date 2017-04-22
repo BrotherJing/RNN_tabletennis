@@ -6,6 +6,8 @@
 #include <time.h>//time
 #include <sys/time.h>//for timing
 
+#include <opencv2/opencv.hpp>
+
 #include "TrajPredict.h"
 #include "main.h"
 
@@ -40,8 +42,8 @@ int sampleTheta(Tensor &theta, int idx){
 }
 
 Status sample(std::unique_ptr<Session> *session, 
-  std::vector<Coords> &seq,
-  std::vector<Coords> &seq_pred,
+  std::vector<CvPoint3D32f> &seq,
+  std::vector<CvPoint3D32f> &seq_pred,
   std::vector<std::pair<tensorflow::string, Tensor> > &inputs,
   int predict_len, 
   int sl_pre){
@@ -50,7 +52,7 @@ Status sample(std::unique_ptr<Session> *session,
   double mean[3];
   double stderr[4];
 
-  std::vector<Coords> seq_feed(predict_len+1);
+  std::vector<CvPoint3D32f> seq_feed(predict_len+1);
   for(int i=0;i<sl_pre+1;++i){
     seq_feed[i] = seq[i];
   }
@@ -107,7 +109,7 @@ Status sample(std::unique_ptr<Session> *session,
     
     Eigen::VectorXd draw = sample();
     if(i>=sl_pre)
-      seq_feed[i+1] = Coords{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
+      seq_feed[i+1] = CvPoint3D32f{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
 
 #ifdef TIMING
     gettimeofday(&t2,NULL);
@@ -116,7 +118,7 @@ Status sample(std::unique_ptr<Session> *session,
 #endif
   }
   for(int i=0;i<predict_len;++i){
-    seq_pred.push_back(Coords{seq_feed[i].x*X_NORM, seq_feed[i].y*Y_NORM, seq_feed[i].z*Z_NORM});
+    seq_pred.push_back(CvPoint3D32f{seq_feed[i].x*X_NORM, seq_feed[i].y*Y_NORM, seq_feed[i].z*Z_NORM});
   }
   return Status::OK();
 }
@@ -135,19 +137,19 @@ Status LoadGraph(string graph_file_name, std::unique_ptr<Session> *session){
   return Status::OK();
 }
 
-void loadSequence(string input_seq, std::vector<Coords> &seq){
+void loadSequence(string input_seq, std::vector<CvPoint3D32f> &seq){
   float x,y,z,max_z=0;
   std::ifstream input;
   input.open(input_seq.c_str(), std::ifstream::in);
   while(!input.eof()){
     input>>x>>y>>z;
-    Coords coord{x/X_NORM,y/Y_NORM,z/Z_NORM};
+    CvPoint3D32f coord{x/X_NORM,y/Y_NORM,z/Z_NORM};
     seq.push_back(coord);
   }
   input.close();
 }
 
-void saveSequence(string output_seq, std::vector<Coords> &seq){
+void saveSequence(string output_seq, std::vector<CvPoint3D32f> &seq){
   std::ofstream output;
   output.open(output_seq.c_str(), std::ios::out|std::ios::trunc);
   for(int i=0;i<seq.size();++i){
@@ -156,9 +158,9 @@ void saveSequence(string output_seq, std::vector<Coords> &seq){
   output.close();
 }
 
-void fillPlaceholder(std::vector<Coords> &seq, Tensor &x, int idx){
+void fillPlaceholder(std::vector<CvPoint3D32f> &seq, Tensor &x, int idx){
   auto tensor = x.tensor<float, 3>();
-  Coords coord = seq[idx];
+  CvPoint3D32f coord = seq[idx];
   tensor(0,0,0) = coord.x;
   tensor(0,1,0) = coord.y;
   tensor(0,2,0) = coord.z;
@@ -173,8 +175,8 @@ int main(int argc, char **argv) {
   string output_seq = "output.csv";
 
   TrajPredict pred(graph);
-  std::vector<Coords> seq;
-  std::vector<Coords> seq_pred;
+  std::vector<CvPoint3D32f> seq;
+  std::vector<CvPoint3D32f> seq_pred;
   loadSequence(input_seq, seq);
   Status run_sample = pred.sample(seq, seq_pred, PREDICT_LEN, SEQ_PRE);
   if(!run_sample.ok()){

@@ -1,4 +1,5 @@
 #include "TrajPredict.h"
+#include <opencv2/opencv.hpp>
 
 using namespace tensorflow;
 using namespace tensorflow::ops;
@@ -60,8 +61,8 @@ int TrajPredict::sampleTheta(Tensor &theta, int idx){
   return 0;
 }
 
-Status TrajPredict::sample(std::vector<Coords> &seq,
-  std::vector<Coords> &seq_pred,
+Status TrajPredict::sample(std::vector<CvPoint3D32f> &seq,
+  std::vector<CvPoint3D32f> &seq_pred,
   int predict_len, 
   int sl_pre){
 
@@ -69,7 +70,7 @@ Status TrajPredict::sample(std::vector<Coords> &seq,
   double mean[3];
   double stderr[4];
 
-  std::vector<Coords> seq_feed(predict_len+1);
+  std::vector<CvPoint3D32f> seq_feed(predict_len+1);
   for(int i=0;i<sl_pre+1;++i){
     seq_feed[i] = seq[i];
   }
@@ -117,10 +118,12 @@ Status TrajPredict::sample(std::vector<Coords> &seq,
     
     Eigen::VectorXd draw = sample();
     if(i>=sl_pre)
-      seq_feed[i+1] = Coords{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
+      seq_feed[i+1] = CvPoint3D32f{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
+      //seq_feed[i+1] = Coords{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
   }
   for(int i=0;i<predict_len;++i){
-    seq_pred.push_back(Coords{seq_feed[i].x*X_NORM, seq_feed[i].y*Y_NORM, seq_feed[i].z*Z_NORM});
+    //seq_pred.push_back(Coords{seq_feed[i].x*X_NORM, seq_feed[i].y*Y_NORM, seq_feed[i].z*Z_NORM});
+    seq_pred.push_back(CvPoint3D32f{seq_feed[i].x*X_NORM, seq_feed[i].y*Y_NORM, seq_feed[i].z*Z_NORM});
   }
   return Status::OK();
 }
@@ -139,9 +142,9 @@ Status TrajPredict::LoadGraph(const string graph_file_name, std::unique_ptr<Sess
   return Status::OK();
 }
 
-void TrajPredict::fillPlaceholder(std::vector<Coords> &seq, Tensor &x, int idx){
+void TrajPredict::fillPlaceholder(std::vector<CvPoint3D32f> &seq, Tensor &x, int idx){
   auto tensor = x.tensor<float, 3>();
-  Coords coord = seq[idx];
+  CvPoint3D32f coord = seq[idx];
   tensor(0,0,0) = coord.x;
   tensor(0,1,0) = coord.y;
   tensor(0,2,0) = coord.z;

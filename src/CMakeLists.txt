@@ -7,6 +7,7 @@ set(EXECUTABLE tabletennis)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules")
 
+find_package(OpenCV REQUIRED)
 find_package(TensorFlow REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(Protobuf REQUIRED)
@@ -18,7 +19,7 @@ include_directories(${PROJECT_INCLUDE_DIRS} /home/jing/local/include)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_library(trajpred SHARED TrajPredict.cpp)
-target_link_libraries(trajpred ${PROJECT_LIBRARIES})
+target_link_libraries(trajpred ${PROJECT_LIBRARIES} ${OpenCV_LIBS})
 
 add_executable(${EXECUTABLE} ${SOURCE_FILES})
-target_link_libraries(${EXECUTABLE} ${PROJECT_LIBRARIES})
+target_link_libraries(${EXECUTABLE} ${PROJECT_LIBRARIES} ${OpenCV_LIBS})

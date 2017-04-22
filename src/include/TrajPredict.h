@@ -1,6 +1,8 @@
 #ifndef HEADER_TRAJ_PREDICT
 #define HEADER_TRAJ_PREDICT
 
+#include <opencv2/opencv.hpp>
+
 #include <Eigen/Eigenvalues> 
 
 #include "tensorflow/core/platform/env.h"
@@ -89,8 +91,8 @@ class TrajPredict
 public:
 	TrajPredict(const tensorflow::string graph_file_name);
 	~TrajPredict();
-	tensorflow::Status sample(std::vector<Coords> &seq,
-	  std::vector<Coords> &seq_pred,
+	tensorflow::Status sample(std::vector<CvPoint3D32f> &seq,
+	  std::vector<CvPoint3D32f> &seq_pred,
 	  int predict_len, 
 	  int sl_pre);
 	
@@ -98,7 +100,7 @@ private:
 	tensorflow::Status initialize(std::unique_ptr<tensorflow::Session> *session, std::vector<tensorflow::Tensor> *initialized_outputs);
 	int sampleTheta(tensorflow::Tensor &theta, int idx);
 	tensorflow::Status LoadGraph(const tensorflow::string graph_file_name, std::unique_ptr<tensorflow::Session> *session);
-	void fillPlaceholder(std::vector<Coords> &seq, tensorflow::Tensor &x, int idx);
+	void fillPlaceholder(std::vector<CvPoint3D32f> &seq, tensorflow::Tensor &x, int idx);
 
 	std::unique_ptr<tensorflow::Session> session;
 	std::vector<tensorflow::Tensor> initialized_outputs;
