@@ -95,12 +95,17 @@ public:
 	  std::vector<CvPoint3D32f> &seq_pred,
 	  int predict_len, 
 	  int sl_pre);
+    tensorflow::Status sampleN(CvPoint3D32f coord,
+      std::vector<CvPoint3D32f> &seq_pred,
+      int predict_len);
+    CvPoint3D32f sample1(CvPoint3D32f coord);
+    bool clearState();
 	
 private:
 	tensorflow::Status initialize(std::unique_ptr<tensorflow::Session> *session, std::vector<tensorflow::Tensor> *initialized_outputs);
 	int sampleTheta(tensorflow::Tensor &theta, int idx);
-	tensorflow::Status LoadGraph(const tensorflow::string graph_file_name, std::unique_ptr<tensorflow::Session> *session);
-	void fillPlaceholder(std::vector<CvPoint3D32f> &seq, tensorflow::Tensor &x, int idx);
+    tensorflow::Status LoadGraph(const tensorflow::string graph_file_name, std::unique_ptr<tensorflow::Session> *session);
+	void fillPlaceholder(CvPoint3D32f coord, tensorflow::Tensor &x);
 
 	std::unique_ptr<tensorflow::Session> session;
 	std::vector<tensorflow::Tensor> initialized_outputs;
