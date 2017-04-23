@@ -46,10 +46,32 @@ Status TrajPredict::initialize(std::unique_ptr<Session> *session, std::vector<Te
     initial_state_c_1,
     initial_state_h_1
   }, {}, initialized_outputs);
+  run_initialize_status = (*session)->Run({}, {
+    initial_state_c_0,
+    initial_state_h_0,
+    initial_state_c_1,
+    initial_state_h_1
+  }, {}, &saved_state);
   return run_initialize_status;
 }
 
+bool TrajPredict::saveState(){
+  return saved_state[0].CopyFrom(inputs[0].second, inputs[0].second.shape())&&
+    saved_state[1].CopyFrom(inputs[1].second, inputs[1].second.shape())&&
+    saved_state[2].CopyFrom(inputs[2].second, inputs[2].second.shape())&&
+    saved_state[3].CopyFrom(inputs[3].second, inputs[3].second.shape());
+}
+
+bool TrajPredict::restoreState(){
+  return inputs[0].second.CopyFrom(saved_state[0], saved_state[0].shape())&&
+    inputs[1].second.CopyFrom(saved_state[1], saved_state[1].shape())&&
+    inputs[2].second.CopyFrom(saved_state[2], saved_state[2].shape())&&
+    inputs[3].second.CopyFrom(saved_state[3], saved_state[3].shape());
+}
+
 bool TrajPredict::clearState(){
+  if(is_initial_state)return true;
+  is_initial_state = true;
   return inputs[0].second.CopyFrom(initialized_outputs[0], initialized_outputs[0].shape())&&
     inputs[1].second.CopyFrom(initialized_outputs[1], initialized_outputs[1].shape())&&
     inputs[2].second.CopyFrom(initialized_outputs[2], initialized_outputs[2].shape())&&
@@ -95,6 +117,8 @@ CvPoint3D32f TrajPredict::sample1(CvPoint3D32f coord){
   inputs[3].second.CopyFrom(outputs[11], outputs[11].shape()))){
     return CvPoint3D32f{};
   }
+  is_initial_state = false;
+
   int idx = sampleTheta(outputs[7], 0);//theta
   mean[0] = outputs[0].tensor<float, 3>()(0, idx, 0);
   mean[1] = outputs[1].tensor<float, 3>()(0, idx, 0);
@@ -151,6 +175,7 @@ Status TrajPredict::sampleN(CvPoint3D32f coord,
     inputs[3].second.CopyFrom(outputs[11], outputs[11].shape()))){
       return Status::OK();
     }
+    is_initial_state = false;
     int idx = sampleTheta(outputs[7], 0);//theta
     mean[0] = outputs[0].tensor<float, 3>()(0, idx, 0);
     mean[1] = outputs[1].tensor<float, 3>()(0, idx, 0);
@@ -215,6 +240,7 @@ Status TrajPredict::sample(std::vector<CvPoint3D32f> &seq,
     inputs[3].second.CopyFrom(outputs[11], outputs[11].shape()))){
       return Status::OK();
     }
+    is_initial_state = false;
     int idx = sampleTheta(outputs[7], 0);//theta
     mean[0] = outputs[0].tensor<float, 3>()(0, idx, 0);
     mean[1] = outputs[1].tensor<float, 3>()(0, idx, 0);
@@ -265,7 +291,8 @@ void TrajPredict::fillPlaceholder(CvPoint3D32f coord, Tensor &x){
   tensor(0,2,0) = coord.z;
 }
 
-TrajPredict::TrajPredict(const string graph_file_name){
+TrajPredict::TrajPredict(const string graph_file_name):
+  is_initial_state(true){
   srand(time(NULL));
   Status status = LoadGraph(graph_file_name, &session);
   if (!status.ok()) {

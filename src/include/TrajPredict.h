@@ -99,6 +99,8 @@ public:
       std::vector<CvPoint3D32f> &seq_pred,
       int predict_len);
     CvPoint3D32f sample1(CvPoint3D32f coord);
+    bool saveState();
+    bool restoreState();
     bool clearState();
 	
 private:
@@ -109,7 +111,10 @@ private:
 
 	std::unique_ptr<tensorflow::Session> session;
 	std::vector<tensorflow::Tensor> initialized_outputs;
+    std::vector<tensorflow::Tensor> saved_state;
   	std::vector<std::pair<tensorflow::string, tensorflow::Tensor> > inputs;
+
+    bool is_initial_state;
 };
 
 #endif
