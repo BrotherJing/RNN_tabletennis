@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d
+import matplotlib.mlab as mlab
 
 class DataLoad():
 	def __init__(self, dir, filename):
@@ -38,7 +41,7 @@ class DataLoad():
 				end_idx = i
 				seq = df_arr[start_idx:end_idx,:]
 				while seq.shape[0]>=seq_len+1:
-					self.X.append(seq[:seq_len,:3])
+					self.X.append(self.noisy(seq[:seq_len,:3]))
 					self.labels.append(seq[1:seq_len+1,:3])
 					seq = seq[int(seq_len*(1.0 - overlap_rate)):]
 				start_idx = end_idx
@@ -60,9 +63,24 @@ class DataLoad():
 		print "%d train samples and %d test samples"%(idx_cut, N - idx_cut)
 
 	def preprocess(self, data):
-		maxZ = np.max(data[:,2])
-		print "max z is %d"%maxZ
-		data[:,2] = data[:,2]/maxZ
+		self.maxZ = np.max(data[:,2])
+		print "max z is %d"%self.maxZ
+		data[:,2] = data[:,2]/self.maxZ
 		data[:,0] = data[:,0]/1525
 		data[:,1] = data[:,1]/2740
 		return data
+
+	def noisy(self, data):
+		mean = [0,0,0]
+		cov = [[.01/1525,0,0],[0,.01/2740,0],[0,0,.01/self.maxZ]]
+		draw = np.random.multivariate_normal(mean, cov, data.shape[0])
+		'''tmp = data + draw
+		fig = plt.figure()
+		ax = fig.gca(projection='3d')
+		ax.plot(data[:,0], data[:,1], data[:,2],'r')
+		ax.plot(tmp[:,0], tmp[:,1], tmp[:,2],'b')
+		ax.set_xlabel('x coordinate')
+		ax.set_ylabel('y coordinate')
+		ax.set_zlabel('z coordinate')
+		plt.show()'''
+		return data + draw

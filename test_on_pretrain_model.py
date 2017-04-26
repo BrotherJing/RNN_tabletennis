@@ -42,9 +42,9 @@ if filename=='seq_all.csv':
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 20
 elif filename =='all_data.csv':
-	config['seq_len'] = 60
-	config['batch_size'] = 64
-	config['overlap_rate'] = 0.8
+	config['seq_len'] = 120
+	config['batch_size'] = 20
+	config['overlap_rate'] = 0.0
 	config['lr_decay'] = 0.98
 	config['max_epoch'] = 10
 	config['max_max_epoch'] = 20
