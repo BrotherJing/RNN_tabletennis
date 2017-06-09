@@ -55,12 +55,12 @@ elif filename =='all_data.csv':
 	config['max_epoch'] = 60
 	config['max_max_epoch'] = 100
 else:
-	config['seq_len'] = 120
+	config['seq_len'] = 120#29
 	config['batch_size'] = 20
 	config['overlap_rate'] = 0.0
 	config['lr_decay'] = 0.95
-	config['max_epoch'] = 10
-	config['max_max_epoch'] = 30
+	config['max_epoch'] = 5
+	config['max_max_epoch'] = 10
 config['learning_rate'] = 0.005
 config['num_layers'] = 2
 config['hidden_size'] = 64
@@ -75,7 +75,7 @@ def main(_):
 
 	dl = DataLoad(directory, filename)
 
-	dl.load_data(config['seq_len'], config['overlap_rate'], verbose = True)
+	dl.load_data(config['seq_len'], config['overlap_rate'], verbose = True, augment = True)
 
 	dl.split_train_test(train_ratio)
 
@@ -103,8 +103,11 @@ def main(_):
 			tf.summary.scalar("square error loss", model.cost)
 			tf.summary.histogram("prob", model.p_sum)
 			tf.summary.histogram("w", model.softmax_w)
-			tf.summary.histogram("p_xy", model.p_xy)
+			#tf.summary.histogram("p_xy", model.p_xy)
 			tf.summary.histogram("p_z", model.p_z)
+			tf.summary.histogram("mu3", model.mu3)
+			tf.summary.histogram("delta3", model.delta3)
+			#tf.summary.histogram("theta", model.theta_check)
 		with tf.name_scope("Test"):
 			with tf.variable_scope("Model", reuse=True, initializer=initializer):
 				mtest = Model(False, config)
@@ -141,7 +144,7 @@ def main(_):
 				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
 			for i in range(config['max_max_epoch']):
-				mtest.sample(session, X_test[5], sl_pre=config['seq_len']/2);
+				mtest.sample(session, X_test[i], sl_pre=4);
 
 			saver.save(session, directory+'my-model')
 

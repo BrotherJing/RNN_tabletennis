@@ -1,5 +1,6 @@
 data/*
 src/build/*
 *.pyc
+*.txt
 
 .ipynb_checkpoints/*

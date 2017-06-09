@@ -1,6 +1,10 @@
 #include "TrajPredict.h"
 #include <opencv2/opencv.hpp>
 
+#include <stdlib.h>//srand, rand
+#include <time.h>//time
+#include <sys/time.h>//for timing
+
 using namespace tensorflow;
 using namespace tensorflow::ops;
 using tensorflow::Flags;
@@ -138,7 +142,7 @@ CvPoint3D32f TrajPredict::sample1(CvPoint3D32f coord){
   normal_random_variable sample { means, covar };
   
   Eigen::VectorXd draw = sample();
-  return CvPoint3D32f{coord.x+float(draw(0)), coord.y+float(draw(1)), coord.z+float(draw(2))};
+  return CvPoint3D32f{coord.x+float(draw(0))*X_NORM, coord.y+float(draw(1))*Y_NORM, coord.z+float(draw(2))*Z_NORM};
 }
 
 Status TrajPredict::sampleN(CvPoint3D32f coord,
@@ -219,7 +223,12 @@ Status TrajPredict::sample(std::vector<CvPoint3D32f> &seq,
 
   std::vector<Tensor> outputs;
 
+  struct timeval t1,t2;
+  double timeuse;
+
   for(int i=0;i<predict_len;++i){
+
+    gettimeofday(&t1,NULL);
 
     fillPlaceholder(seq_feed[i], inputs[4].second);
   
@@ -262,6 +271,10 @@ Status TrajPredict::sample(std::vector<CvPoint3D32f> &seq,
     Eigen::VectorXd draw = sample();
     if(i>=sl_pre)
       seq_feed[i+1] = CvPoint3D32f{seq_feed[i].x+float(draw(0)), seq_feed[i].y+float(draw(1)), seq_feed[i].z+float(draw(2))};
+
+    gettimeofday(&t2,NULL);
+    timeuse = (t2.tv_sec - t1.tv_sec)*1000.0 + (t2.tv_usec - t1.tv_usec)/1000.0;
+    printf("Use Time:%fms\n",timeuse);
   }
   for(int i=0;i<predict_len;++i){
     seq_pred.push_back(CvPoint3D32f{seq_feed[i].x*X_NORM, seq_feed[i].y*Y_NORM, seq_feed[i].z*Z_NORM});
@@ -286,9 +299,9 @@ Status TrajPredict::LoadGraph(const string graph_file_name, std::unique_ptr<Sess
 void TrajPredict::fillPlaceholder(CvPoint3D32f coord, Tensor &x){
   auto tensor = x.tensor<float, 3>();
   //CvPoint3D32f coord = seq[idx];
-  tensor(0,0,0) = coord.x;
-  tensor(0,1,0) = coord.y;
-  tensor(0,2,0) = coord.z;
+  tensor(0,0,0) = coord.x/X_NORM;
+  tensor(0,1,0) = coord.y/Y_NORM;
+  tensor(0,2,0) = coord.z/Z_NORM;
 }
 
 TrajPredict::TrajPredict(const string graph_file_name):

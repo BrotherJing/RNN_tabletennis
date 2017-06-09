@@ -51,7 +51,7 @@ class Model():
 			self.output_units = self.mixture_params * self.mixtures
 			output = tf.reshape(tf.concat(outputs, 0), [-1, hidden_size])#[seqlen*batch_size, hidden_size]
 			softmax_w = tf.get_variable("softmax_w", [hidden_size, self.output_units], dtype=tf.float32)
-			softmax_b = tf.get_variable("softmax_b", [self.output_units], dtype=tf.float32, initializer=tf.constant_initializer(0.5))
+			softmax_b = tf.get_variable("softmax_b", [self.output_units], dtype=tf.float32, initializer=tf.constant_initializer(0.005))
 			logits = tf.matmul(output, softmax_w) + softmax_b#[seqlen-1*batch_size, output_units]
 
 			self._softmax_w = softmax_w
@@ -74,6 +74,8 @@ class Model():
 			self._s2 = s2 = tf.exp(s2)
 			self._s3 = s3 = tf.exp(s3)#explode?
 			self._rho = rho = tf.tanh(rho)
+			self._delta3 = delta3
+			self._mu3 = mu3
 
 			self._theta_check = tf.reduce_sum(theta, 1)
 
@@ -196,6 +198,14 @@ class Model():
 	@property
 	def s3(self):
 		return self._s3
+
+	@property
+	def mu3(self):
+		return self._mu3
+
+	@property
+	def delta3(self):
+		return self._delta3
 
 	@property
 	def rho(self):

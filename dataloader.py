@@ -13,13 +13,14 @@ class DataLoad():
 		"""
 		self.data_path = dir+filename
 		self.X = []
+		self.X_raw = []
 		self.labels = []
 		self.data = {}#will be divided into train/val/test
 		self.N = 0
 		self.iter_train = 0
 		self.epochs = 0
 
-	def load_data(self, seq_len = 20, overlap_rate = 0.2, verbose = False):
+	def load_data(self, seq_len = 20, overlap_rate = 0.2, augment = False, verbose = False):
 		if self.X:
 			print "You already have the data"
 			return
@@ -41,13 +42,19 @@ class DataLoad():
 				end_idx = i
 				seq = df_arr[start_idx:end_idx,:]
 				while seq.shape[0]>=seq_len+1:
+					self.X_raw.append(seq[:seq_len,:3])
 					self.X.append(self.noisy(seq[:seq_len,:3]))
 					self.labels.append(seq[1:seq_len+1,:3])
+					if augment:
+						self.X_raw.append(self.augment(seq[:seq_len,:3]))
+						self.X.append(self.augment(self.noisy(seq[:seq_len,:3])))
+						self.labels.append(self.augment(seq[1:seq_len+1,:3]))
 					seq = seq[int(seq_len*(1.0 - overlap_rate)):]
 				start_idx = end_idx
 		if verbose:
 			print "load %d sequences of data"%len(self.X)
 		self.X = np.stack(self.X, 0)
+		self.X_raw = np.stack(self.X_raw, 0)
 		self.labels = np.stack(self.labels, 0)
 
 	def split_train_test(self, train_ratio):
@@ -60,6 +67,8 @@ class DataLoad():
 		self.data['y_train'] = self.labels[:idx_cut]
 		self.data['X_test'] = self.X[idx_cut:]
 		self.data['y_test'] = self.labels[idx_cut:]
+		self.data['X_train_raw'] = self.X_raw[:idx_cut]
+		self.data['X_test_raw'] = self.X_raw[idx_cut:]
 		print "%d train samples and %d test samples"%(idx_cut, N - idx_cut)
 
 	def preprocess(self, data):
@@ -84,3 +93,9 @@ class DataLoad():
 		ax.set_zlabel('z coordinate')
 		plt.show()'''
 		return data + draw
+
+	def augment(self, data):
+		temp = np.zeros(data.shape)
+		temp[:] = data[:]
+		temp[:,1] = 1 - data[:,1]
+		return temp

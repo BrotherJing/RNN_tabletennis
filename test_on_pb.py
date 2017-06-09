@@ -99,7 +99,7 @@ def main(_):
 			test_outputs.append(session.graph.get_tensor_by_name("Test/Model/MDN/Tanh:0"))
 			test_outputs.append(session.graph.get_tensor_by_name("Test/Model/MDN/Mul:0"))
 
-			sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test, predict_len=120, sl_pre=config['seq_len']/2)
+			sample_more(session, placeholder_x, initial_state, final_state, test_outputs, config, X_test, predict_len=30, sl_pre=4)
 
 if __name__ == '__main__':
 	tf.app.run(main=main)
