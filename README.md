@@ -10,9 +10,39 @@ More detail in the jupyter notebook.
 
 2. Following [tensorflow-cmake](https://github.com/cjweeks/tensorflow-cmake) to build tensorflow shared library, for running the c++ interface.
 
-3. Download our model from...(TODO)
+3. Train, or download our model.
 
-Visualize the input data
+Training data|Models
+----|----
+[coords.csv](http://or9ajn83e.bkt.clouddn.com/coords.csv)|[export-graph_125.pb](http://or9ajn83e.bkt.clouddn.com/export-graph_125.pb)
+[coords_30.csv](http://or9ajn83e.bkt.clouddn.com/coords_30.csv)|[export-graph_30.pb](http://or9ajn83e.bkt.clouddn.com/export-graph_30.pb)
+
+4. Build the C++ interface (Optional).
+```bash
+cd src
+mkdir build && cd build
+cmake ..
+make
+```
+
+## Usage
+
+Train the model:
+```bash
+python main.py
+```
+Convert to .pb format:
+```bash
+python write_pb.py
+```
+Test the model:
+```bash
+python test_on_pb.py #or use the jupyter notebook
+```
+
+## Visualization
+
+Input data
 
 ![Input Data](http://7xrcar.com1.z0.glb.clouddn.com/traj_data.png)
 
