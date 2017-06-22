@@ -24,6 +24,7 @@ mkdir build && cd build
 cmake ..
 make
 ```
+You have to modify some path in the `CMakeList.txt` file in order to build.
 
 ## Usage
 

@@ -15,6 +15,7 @@ find_package(Protobuf REQUIRED)
 set(PROJECT_INCLUDE_DIRS ${TensorFlow_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS})
 set(PROJECT_LIBRARIES ${TensorFlow_LIBRARIES} ${PROTOBUF_LIBRARIES})
 
+#IMPORTANT! Change this to your Eigen3 include directory
 include_directories(${PROJECT_INCLUDE_DIRS} /home/jing/local/include)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 

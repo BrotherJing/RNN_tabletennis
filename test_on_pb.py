@@ -45,7 +45,7 @@ train_ratio = 0.8
 
 def main(_):
 
-	df = pd.read_csv(filename, delimiter=' ')
+	'''df = pd.read_csv(filename, delimiter=' ')
 	print "the shape of the data is ", df.shape
 
 	df_arr = df.astype(float).as_matrix()
@@ -59,7 +59,7 @@ def main(_):
 
 	X_test = np.transpose(df_arr, [1,0])
 
-	config['coords'] = 3
+	config['coords'] = 3'''
 
 	g = tf.Graph()
 	with g.as_default():

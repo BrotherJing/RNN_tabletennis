@@ -37,7 +37,7 @@ def run_epoch(session, model, X, y_, eval_op=None, n_epoch=0, summary=None, summ
 directory = 'data/'
 #filename = 'all_data.csv'
 #filename = 'seq_all.csv'
-filename = 'coords.csv'
+filename = 'coords_80.csv'
 
 config = {}
 if filename=='seq_all.csv':
@@ -55,13 +55,13 @@ elif filename =='all_data.csv':
 	config['max_epoch'] = 60
 	config['max_max_epoch'] = 100
 else:
-	config['seq_len'] = 120#29
+	config['seq_len'] = 70#29
 	config['batch_size'] = 20
 	config['overlap_rate'] = 0.0
-	config['lr_decay'] = 0.95
-	config['max_epoch'] = 5
-	config['max_max_epoch'] = 10
-config['learning_rate'] = 0.005
+	config['lr_decay'] = 0.9
+	config['max_epoch'] = 10
+	config['max_max_epoch'] = 15
+config['learning_rate'] = 0.003
 config['num_layers'] = 2
 config['hidden_size'] = 64
 config['mixtures'] = 2
@@ -144,7 +144,7 @@ def main(_):
 				print "Epoch: %d test perplexity: %.3f"%(i+1, test_perplexity)
 
 			for i in range(config['max_max_epoch']):
-				mtest.sample(session, X_test[i], sl_pre=4);
+				mtest.sample(session, X_test[i], sl_pre=10);
 
 			saver.save(session, directory+'my-model')
 
